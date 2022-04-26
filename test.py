@@ -4,6 +4,8 @@ from compiler.generate.net.net import Net
 from compiler.generate.op.conv import ConvDualGenerator,ForwardConv2d
 from compiler.generate.op.relu import ReluDualGenerator,ForwardRelu
 from compiler.generate.op.split import SplitDualGenerator
+from compiler.generate.op.fuse_conv_relu import ForwardFuseConvRelu
+
 from compiler.generate.op.aggregate import AggregateDualGenerator
 from compiler.utils.unique_class_name import unique_class_name
 from compiler.graph.merger import Finder
@@ -26,17 +28,9 @@ def testDualGenerator():
                                                     in_width=3,
                                                     in_height=3,
                                                     in_channels=2).getDual()
-    relu_forward.add_predecessor(conv_forward)
-    relu_backward.add_successor(conv_backward)
+    conv_forward.next_output_to(relu_forward)
+    conv_forward.connect_successor(relu_forward)
     
-    # split_forward,split_backward = SplitDualGenerator(in_batch=1,
-    #                                                 in_width=3,
-    #                                                 in_height=3,
-    #                                                 in_channels=2).getDual()
-
-    # split_forward.add_predecessor(relu_forward)
-    # split_backward.add_successor(relu_backward)
-
     conv2_forward,conv2_backward = ConvDualGenerator(in_batch=1,
                                                     in_width=3,
                                                     in_height=3,
@@ -45,49 +39,30 @@ def testDualGenerator():
                                                     kernel_size=3,
                                                     padding=1).getDual()
     
-    conv2_forward.add_predecessor(relu_forward)
-    conv2_backward.add_successor(relu_backward)
+    relu_forward.next_output_to(conv2_forward)
+    relu_forward.connect_successor(conv2_forward)
+
+    relu2_forward,relu2_backward = ReluDualGenerator(in_batch=1,
+                                                    in_width=3,
+                                                    in_height=3,
+                                                    in_channels=2).getDual()
+    conv2_forward.next_output_to(relu2_forward)
+    conv2_forward.connect_successor(relu2_forward)
 
     net = Net()
-    net.ops = [conv_forward,relu_forward,conv2_forward]
+    for op in [conv_forward,relu_forward,conv2_forward,relu2_forward]:
+        net.add_operator(op)
+
+    print(net)
 
     pattern = [ForwardConv2d,ForwardRelu]
     finder = Finder(net,pattern)
 
     find = finder.find()
     for f in find:
-        for item in f:
-            print(item)
-        print("-----")
-    # for op in net.ops:
-        # print(op)
-    
-    # agg_forward,agg_backward = AggregateDualGenerator(in_batch=1,
-    #                                                 in_width=3,
-    #                                                 in_height=3,
-    #                                                 in_channels=2).getDual()
-                                                
-    # agg_forward.add_predecessor(conv2_forward)
-    # agg_forward.add_predecessor(split_forward)
-
-    # agg_backward.add_successor(conv2_backward)
-    # agg_backward.add_successor(split_backward)
-    
-    # conv_forward.print()
-    # relu_forward.print()
-    # split_forward.print()
-    # conv2_forward.print()
-    # agg_forward.print()
-    # print("------------------------------------------")
-    # conv_backward.print()
-    # relu_backward.print()
-    # split_backward.print()
-    # conv2_backward.print()
-    # agg_backward.print()
-
-    
-
-
+        fuse_conv_relu = ForwardFuseConvRelu.merge(conv=f[0],relu=f[1])
+    print("---------------")
+    print(net)
 
 def testPointer():
     from compiler.utils.pointer import Pointer

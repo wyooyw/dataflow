@@ -27,8 +27,9 @@ class Operator:
     def __init__(self,type:OperatorType,name="",attrs:Attrs=Attrs(),tensors:OpTensors=OpTensors()):
         self.name = name        #算子名称
         self.type = type        #算子类型
-        self.predecessor = []   #前驱算子
-        self.successor = []     #后继算子
+        self.predecessor = set()   #前驱算子
+        self.successor = set()     #后继算子
+        self.net = None
         self.attrs = attrs      #算子属性
         attrs.op = self
         self.tensors = tensors  #算子使用的张量
@@ -47,25 +48,59 @@ class Operator:
             self.max_predecessor = 1
             self.max_successor = 1
         
-    def add_predecessor(self,op,need_another_connect=True):
-        """添加前驱算子
+    def add_predecessor(self,op):
+        """单向添加前驱算子
         """
         assert len(self.predecessor)<self.max_predecessor,f"[{self.name}] Can't add more predecessor."
-        if need_another_connect:
-            op.add_successor(self,need_another_connect=False)
-        self.predecessor.append(op)
+        self.predecessor.add(op)
 
-    def add_successor(self,op,need_another_connect=True):
-        """添加后继算子
+    def add_successor(self,op):
+        """单向添加后继算子
         """
         assert len(self.successor)<self.max_successor,f"[{self.name}] Can't add more successor."
-        
-        if need_another_connect:
-            op.add_predecessor(self,need_another_connect=False)
-        self.successor.append(op)
-        #TODO: 将“计算顺序”与“输入输出张量关联”解耦
-        #在第二阶段 算子融合时，只改变计算顺序，不改变输入输出的张量关联
-        self.tensors.set_next_output(op.tensors.get_next_input()) # TODO 改成算子申请其输出张量的内存，这样可以节省在spliiter的内存开销
+        self.successor.add(op)
+    
+    def connect_predecessor(self,op):
+        """双向添加前驱算子
+        """
+        self.add_predecessor(op)
+        op.add_successor(self)
+    
+    def connect_successor(self,op):
+        """双向添加后继算子
+        """
+        self.add_successor(op)
+        op.add_predecessor(self)
+    
+    def next_output_to(self,op):
+        """将本算子的输出指向后继算子的输入
+        """
+        # TODO 改成算子申请其输出张量的内存，这样可以节省在spliiter的内存开销
+        self.tensors.set_next_output(op.tensors.get_next_input()) 
+    
+    def remove_predecessor(self,*ops):
+        """单向删除前驱节点
+        """
+        for op in ops:
+            self.predecessor.discard(op)
+    
+    def remove_successor(self,*ops):
+        """单向删除后继节点
+        """
+        for op in ops:
+            self.successor.discard(op)
+
+    def disconnect_predecessor(self,op):
+        """双向删除前驱节点
+        """
+        self.remove_predecessor(op)
+        op.remove_successor(self)
+
+    def disconnect_predecessor(self,op):
+        """双向删除后继节点
+        """
+        self.remove_successor(op)
+        op.remove_predecessor(self)
 
     def __str__(self):
         """打印算子信息

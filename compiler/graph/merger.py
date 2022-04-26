@@ -25,9 +25,8 @@ class Finder:
             if begin_op==None:
                 break
             op_seq = self.check(begin_op)
-            if op_seq==None or len(op_seq)==0:
-                break
-            result.append(op_seq)
+            if len(op_seq)>0:
+                result.append(op_seq)
         return result
 
     def find_first_op(self):
@@ -44,6 +43,7 @@ class Finder:
             self.tmp = [begin_op]
             ret = self.dfs(begin_op,0)
         self.tmp = []
+        self.visit.add(begin_op)
         return ret
 
     def dfs(self,begin_op:Operator,step:int):
