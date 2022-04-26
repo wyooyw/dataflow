@@ -1,0 +1,20 @@
+merge:
+
+- replacement: ForwardConv_Relu_Maxpool
+  pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardMaxpool
+
+- replacement: ForwardConv_Relu_Maxpool_Batchnorm
+  pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardMaxpool
+  - ForwardBatchnorm
+
+- replacement: ForwardConv_Relu_Maxpool
+  pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardMaxpool
