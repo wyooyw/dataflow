@@ -1,0 +1,112 @@
+{% for op in operators -%}
+{% set title=op.name.title() %}
+
+"""
+{{op.name}}相关的前传、反传算子，用到的属性、张量，以及产生一对算子的工厂类
+"""
+
+class {{title}}DualGenerator(DualGenerator):
+    """ 同时产生{{title}}的前传和反传算子
+    """
+    def __init__(self,{% for attrs in op.attrs -%}
+                        {{attrs.name}}
+                        {%- if 'type' in attrs %}:{{attrs.type}}{% endif -%}
+                        {%- if 'default' in attrs %}={{attrs.default}}{% endif -%}
+                        ,
+                        {% endfor -%}):
+                        
+        # 定义张量
+        {% for tensor in op.tensors -%}
+        {{tensor.name}} = MemoryManager().alloc{{tensor.type|title}}(shape=({{tensor.shape}}))
+        {% endfor -%}
+
+        # 前传参数
+        forward_{{op.name}}_attrs = Forward{{title}}Attrs({% for attr in op.forward.attrs -%}
+                                                        {{attr}}={{attr}},
+                                                        {% endfor -%})
+        # 反传参数
+        backward_{{op.name}}_attrs = Backward{{title}}Attrs({% for attr in op.backward.attrs -%}
+                                                        {{attr}}={{attr}},
+                                                        {% endfor -%})
+
+        # 前传张量
+        forward_{{op.name}}_tensors = Forward{{title}}Tensors({% for tensor in op.forward.tensors -%}
+                                                        {{tensor}}={{tensor}},
+                                                        {% endfor -%})
+        backward_{{op.name}}_tensors = Backward{{title}}Tensors({% for tensor in op.backward.tensors -%}
+                                                        {{tensor}}={{tensor}},
+                                                        {% endfor -%})
+
+        #定义op
+        self.forward_op = Forward{{title}}(attrs=forward_{{op.name}}_attrs,
+                                        tensors=forward_{{op.name}}_tensors)
+        self.backward_op = Backward{{title}}(attrs=backward_{{op.name}}_attrs,
+                                        tensors=backward_{{op.name}}_tensors)
+
+class Forward{{title}}(Operator):
+    """前传{{title}}算子
+    """
+    def __init__(self,attrs:Forward{{title}}Attrs,tensors:Forward{{title}}Tensors):
+        super().__init__(type=OperatorType.FORWARD_{{name|upper}},
+                        attrs=attrs,
+                        tensors=tensors,
+                        name=unique_class_name(self))
+
+class Backward{{title}}(Operator):
+    """反传{{title}}算子
+    """
+    def __init__(self,attrs:Backward{{title}}Attrs,tensors:Backward{{title}}Tensors):
+        super().__init__(type=OperatorType.BACKWARD_{{name|upper}},
+                        attrs=attrs,
+                        tensors=tensors,
+                        name=unique_class_name(self))
+
+class Forward{{title}}Attrs(Attrs):
+    """前传{{title}}算子的属性
+    """
+    def __init__(self,{% for attr in op.forward.attrs -%}
+                        {{attr}},
+                        {% endfor -%}):
+        super().__init__()
+        {% for attr in op.forward.attrs -%}
+        self.attrs["{{attr}}"] = {{attr}}
+        {% endfor %}
+
+class Backward{{title}}Attrs(Attrs):
+    """反传{{title}}算子的属性
+    """
+    def __init__(self,{% for attr in op.backward.attrs -%}
+                        {{attr}},
+                        {% endfor -%}):
+        super().__init__()
+        {% for attr in op.backward.attrs -%}
+        self.attrs["{{attr}}"] = {{attr}}
+        {% endfor %}
+
+class Forward{{title}}Tensors(OpTensors):
+    """前传{{title}}算子 用到的张量
+    """
+    def __init__(self,{% for tensor in op.forward.tensors -%}
+                        {{tensor}},
+                        {% endfor -%}):
+        super().__init__()
+        {% for tensor in op.forward.tensors -%}
+        self.tensors["{{tensor}}"] = {{tensor}}
+        {% endfor %}
+        self.input = [{% for input in op.forward.input %}"{{input}}",{% endfor %}]
+        self.output = [{% for output in op.forward.output %}"{{output}}",{% endfor %}]
+
+class Backward{{title}}Tensors(OpTensors):
+    """反传{{title}}算子 用到的张量
+    """
+    def __init__(self,{% for tensor in op.backward.tensors -%}
+                        {{tensor}},
+                        {% endfor -%}):
+        super().__init__()
+        {% for tensor in op.backward.tensors -%}
+        self.tensors["{{tensor}}"] = {{tensor}}
+        {% endfor %}
+        self.input = [{% for input in op.backward.input %}"{{input}}",{% endfor %}]
+        self.output = [{% for output in op.backward.output %}"{{output}}",{% endfor %}]
+
+{% endfor %}

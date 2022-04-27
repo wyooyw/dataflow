@@ -1,0 +1,142 @@
+operators:
+# 卷积
+- name: conv
+  attrs:
+  - name: in_batch
+  - name: in_width
+  - name: in_height
+  - name: in_channels
+  - name: out_channels
+  - name: kernel_size
+  - name: padding
+    default: 0
+  tensors:
+  - name: weight
+    type: weight
+    shape: out_channels,in_channels,kernel_size,kernel_size
+    grad: true
+  - name: input
+    type: activation
+    shape: in_batch,in_channels,in_height,in_width
+    grad: true
+  - name: output
+    type: grad
+    shape: in_batch,out_channels,in_width+2*padding-kernel_size+1,in_width+2*padding-kernel_size+1
+    grad: true
+  forward:
+    attrs:
+    - in_channels
+    - out_channels
+    - kernel_size
+    - padding
+    tensors:
+    - weight
+    - input
+    - output
+    input:
+    - input
+    output:
+    - output
+  backward:
+    attrs:
+    - in_channels
+    - out_channels
+    - kernel_size
+    - padding
+    tensors:
+    - weight
+    - input
+    - output.grad
+    - weight.grad
+    - input.grad
+    input:
+    - output.grad
+    output:
+    - input.grad
+
+# 池化
+- name: relu
+  attrs:
+  - name: in_batch
+  - name: in_width
+  - name: in_height
+  - name: in_channels
+  tensors:
+  - name: mask
+    type: activation
+    shape: in_batch,in_channels,in_height,in_width
+  - name: input
+    type: activation
+    shape: in_batch,in_channels,in_height,in_width
+    grad: true
+  - name: output
+    type: activation
+    shape: in_batch,in_channels,in_height,in_width
+    grad: true
+  forward:
+    attrs: []
+    tensors:
+    - mask
+    - input
+    - output
+    input:
+    - input
+    output:
+    - output
+  backward:
+    attrs: []
+    tensors:
+    - mask
+    - output.grad
+    - input.grad
+    input:
+    - output.grad
+    output:
+    - input.grad
+
+- name: linear
+  attrs: 
+  - name: in_batch
+  - name: in_features
+  - name: out_features
+  tensors:
+  - name: input
+    type: activation
+    shape: in_batch,in_features
+    grad: true
+  - name: output
+    type: activation
+    shape: in_batch,out_features
+    grad: true
+  - name: weight
+    type: weight
+    shape: in_features,out_features
+    grad: true
+  forward:
+    attrs:
+    - in_batch
+    - in_features
+    - out_features
+    tensors:
+    - input
+    - output
+    - weight
+    input:
+    - input
+    output:
+    - output
+  backward:
+    attrs:
+    - in_batch
+    - in_features
+    - out_features
+    tensors:
+    - input.grad
+    - output.grad
+    - weight.grad
+    - input
+    - weight
+    input:
+    - output.grad
+    output:
+    - input.grad

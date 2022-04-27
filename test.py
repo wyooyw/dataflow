@@ -9,6 +9,7 @@ from compiler.generate.op.fuse_conv_relu import ForwardFuseConvRelu
 from compiler.generate.op.aggregate import AggregateDualGenerator
 from compiler.utils.unique_class_name import unique_class_name
 from compiler.graph.merger import Finder
+from compiler.config import Config,CodeGen
 def testMemoryManager():
     mem = MemoryManager()
     mem.calcBases()
@@ -30,7 +31,7 @@ def testDualGenerator():
                                                     in_channels=2).getDual()
     conv_forward.next_output_to(relu_forward)
     conv_forward.connect_successor(relu_forward)
-    
+
     conv2_forward,conv2_backward = ConvDualGenerator(in_batch=1,
                                                     in_width=3,
                                                     in_height=3,
@@ -77,10 +78,12 @@ class MyClass:
         # print(unique_class_name(self))
         pass
 
+def testConfig():
+    codegen = CodeGen()
+    codegen.generate_operator()
+
 if __name__=="__main__":
     # testPointer()
-    testDualGenerator()
+    # testDualGenerator()
     # testMemoryManager()
-    # c1 = MyClass()
-    # print(type(c1).__name__)
-    # c2 = MyClass()
+    testConfig()
