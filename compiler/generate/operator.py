@@ -2,6 +2,7 @@ from enum import Enum
 from compiler.target_gen.memory.mem_operator import MemOperator
 from compiler.generate.op.attrs.attrs import Attrs
 from compiler.generate.op.tensors.op_tensors import OpTensors
+import copy
 class OperatorType(Enum):
     # 1~50 单个的算子
     FORWARD_CONV = 0
@@ -48,35 +49,45 @@ class Operator:
             self.max_predecessor = 1
             self.max_successor = 1
         
-    def add_predecessor(self,op):
+    def add_predecessor(self,*ops):
         """单向添加前驱算子
         """
-        assert len(self.predecessor)<self.max_predecessor,f"[{self.name}] Can't add more predecessor."
-        self.predecessor.add(op)
+        for op in ops:
+            assert len(self.predecessor)<self.max_predecessor,f"[{self.name}] Can't add more predecessor."
+            self.predecessor.add(op)
 
-    def add_successor(self,op):
+    def add_successor(self,*ops):
         """单向添加后继算子
         """
-        assert len(self.successor)<self.max_successor,f"[{self.name}] Can't add more successor."
-        self.successor.add(op)
+        for op in ops:
+            assert len(self.successor)<self.max_successor,f"[{self.name}] Can't add more successor."
+            self.successor.add(op)
     
-    def connect_predecessor(self,op):
+    def connect_predecessor(self,*ops):
         """双向添加前驱算子
         """
-        self.add_predecessor(op)
-        op.add_successor(self)
+        for op in ops:
+            self.add_predecessor(op)
+            op.add_successor(self)
     
-    def connect_successor(self,op):
+    def connect_successor(self,*ops):
         """双向添加后继算子
         """
-        self.add_successor(op)
-        op.add_predecessor(self)
+        for op in ops:
+            self.add_successor(op)
+            op.add_predecessor(self)
     
     def next_output_to(self,op):
         """将本算子的输出指向后继算子的输入
         """
         # TODO 改成算子申请其输出张量的内存，这样可以节省在spliiter的内存开销
-        self.tensors.set_next_output(op.tensors.get_next_input()) 
+        self.tensors.set_next_output(op.tensors.get_next_input())
+
+    def next_input_from(self,op):
+        """将本算子的输出指向后继算子的输入
+        """
+        # TODO 改成算子申请其输出张量的内存，这样可以节省在spliiter的内存开销
+        self.tensors.set_next_input(op.tensors.get_output())  
     
     def remove_predecessor(self,*ops):
         """单向删除前驱节点
@@ -90,17 +101,19 @@ class Operator:
         for op in ops:
             self.successor.discard(op)
 
-    def disconnect_predecessor(self,op):
+    def disconnect_predecessor(self,*ops):
         """双向删除前驱节点
         """
-        self.remove_predecessor(op)
-        op.remove_successor(self)
+        for op in ops:
+            self.remove_predecessor(op)
+            op.remove_successor(self)
 
-    def disconnect_predecessor(self,op):
+    def disconnect_successor(self,*ops):
         """双向删除后继节点
         """
-        self.remove_successor(op)
-        op.remove_predecessor(self)
+        for op in ops:
+            self.remove_successor(op)
+            op.remove_successor(self)
 
     def __str__(self):
         """打印算子信息
@@ -108,3 +121,15 @@ class Operator:
         input_names = [op.name for op in self.predecessor]
         output_names = [op.name for op in self.successor]
         return f"{self.name},(input={input_names}, output={output_names})"
+
+    def __copy__(self):
+        """复制算子
+
+        对attrs和tensors进行复制
+        tensors下的storage不复制,与原算子共享
+        """
+        copy_attrs = copy.copy(self.attrs)
+        copy_tensors = copy.copy(self.tensors)
+        #type(self)为子类
+        copy_self = type(self)(attrs=copy_attrs,tensors=copy_tensors)
+        return copy_self

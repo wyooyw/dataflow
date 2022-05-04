@@ -1,62 +1,68 @@
 from compiler.generate.operator import Operator,OperatorType
 from compiler.utils.unique_class_name import unique_class_name
 import compiler.utils.utils as utils
-from compiler.generate.op.attrs.fuse_conv_relu_attrs import ForwardFuseConvReluAttrs
-from compiler.generate.op.tensors.fuse_conv_relu_tensors import ForwardFuseConvReluTensors
+from compiler.generate.op.attrs.conv_relu_attrs import ForwardConvReluAttrs
+from compiler.generate.op.tensors.conv_relu_tensors import ForwardConvReluTensors
 from queue import Queue
-class ForwardFuseConvRelu(Operator):
-    def __init__(self,attrs:ForwardFuseConvReluAttrs,tensors:ForwardFuseConvReluTensors):
-        super().__init__(type=OperatorType.FORWARD_FUSE_CONV_RELU,
-                        attrs=attrs,
-                        tensors=tensors,
+class ForwardConvRelu(Operator):
+    def __init__(self,conv,relu):
+        super().__init__(type=OperatorType.OTHER,
+                        attrs=Attrs(),
+                        tensors=OpTensors(),
                         name=unique_class_name(self))
+        self.conv = conv
+        self.relu = relu
+
+    def __copy__(self):
+        copy_conv = copy.copy(self.conv)
+        copy_relu = copy.copy(self.relu)
+        copy_conv_relu = ForwardConvRelu(conv=copy_conv,relu=copy_relu)
+        return copy_conv_relu
+        
 
     @classmethod
-    def merge(self,conv,relu):
-        """将ForwardConv2d和ForwardRelu合并为ForwardFuseConvRelu
+    def replace_from(self,forward_conv:ForwardConv,forward_relu:ForwardRelu):
+        """将ForwardConv和ForwardRelu合并为ForwardConvRelu
         """
-        
-        #合并attr
-        conv_attrs = conv.attrs
-        relu_attrs = relu.attrs
-        attrs = ForwardFuseConvReluAttrs(conv_in_channels=conv_attrs.get("in_channels"),
-                                        conv_out_channels=conv_attrs.get("out_channels"),
-                                        conv_kernel_size=conv_attrs.get("kernel_size"),
-                                        conv_padding=conv_attrs.get("padding"))
-        
-        #合并tensor
-        conv_tensors = conv.tensors
-        relu_tensors = relu.tensors
-        tensors = ForwardFuseConvReluTensors(conv_weight=conv_tensors.get("weight"),
-                                            conv_input=conv_tensors.get("input"),
-                                            conv_output=conv_tensors.get("output"),
-                                            relu_mask=relu_tensors.get("mask"),
-                                            relu_input=relu_tensors.get("input"),
-                                            relu_output=relu_tensors.get("output"))
-        
         #创建新算子
-        forward_fuse_conv_relu = ForwardFuseConvRelu(attrs=attrs,
-                                                    tensors=tensors)
-
+        forward_conv_relu = ForwardConvRelu(conv=forward_conv,relu=forward_relu)
+        
         #合并后继节点
-        origin = set([conv,relu])
+        origin = set([forward_conv,forward_relu])
         successors = (conv.successor | relu.successor) - origin
         for successor in successors:
-            successor.remove_predecessor(*origin)
-            successor.connect_predecessor(forward_fuse_conv_relu)
+            successor.disconnect_predecessor(*origin)
+            successor.connect_predecessor(forward_conv_relu)
 
         #合并前驱节点
         predecessors = (conv.predecessor | relu.predecessor) - origin
         for predecessor in predecessors:
-            predecessor.remove_successor(*origin)
-            predecessor.connect_successor(forward_fuse_conv_relu)
+            predecessor.disconnect_successor(*origin)
+            predecessor.connect_successor(forward_conv_relu)
 
         #替换网络中的算子
-        net = conv.net
+        net = forward_conv.net
         net.remove_operator(*origin)
-        net.add_operator(forward_fuse_conv_relu)
+        net.add_operator(forward_conv_relu)
 
-        return forward_fuse_conv_relu
+        return forward_conv_relu
+
+    def generate_target_code(self,instr_tool):
+        conv = self.conv
+        conv_input = conv.get("input")
+        conv_weight = conv.get("weight")
+        conv_output = conv.get("output")
+        relu = self.relu
+        relu_input = relu.get("input")
+        relu_output = relu.get("output")
+        relu_mask = relu.get("mask")
+        #计算卷积
+        instr_tool.add(operate="send",tensor=conv_input.addr,port=0)
+        instr_tool.add(operate="send",tensor=conv_weight.addr,port=1)
+        instr_tool.add(operate="receive",tensor=conv_output.addr,port=2)
+        #计算relu
+        instr_tool.add(operate="receive",tensor=relu_mask.addr,port=4)
+        instr_tool.add(operate="receive",tensor=relu_output.addr,port=5)
 
     def refresh_tensor_shape_limit(self):
         """根据tensor之间的制约，更新对tensor的shape的限制
@@ -95,6 +101,7 @@ class ForwardFuseConvRelu(Operator):
         relu_output.shape_limit = relu_output_shape_lim
 
     def split(self):
+        self.refresh_tensor_shape_limit()
         queue = Queue()
         queue.put(self)
         while not queue.empty():
@@ -107,10 +114,20 @@ class ForwardFuseConvRelu(Operator):
             if out_channel > out_channel_limit:
                 for idx in range(0,out_channel+1,out_channel_limit):
                     op = copy.copy(split_instance)
-                    op.conv.attrs.set("out_channels",out_channel)
+                    op.conv.attrs.set("out_channels",out_channel_limit)
                     #分块后下标的开始和结束
-                    out_channel_start = idx
-                    out_channel_stop = min(idx+out_channel_limit,out_channel)
+                    start = idx
+                    stop = min(idx+out_channel_limit,out_channel)
+
+                    conv = op.conv
+                    relu = op.relu
+                    conv.tensors.set("kernel",conv.tensors.get("kernel")[start:stop,:,:,:])
+                    conv.tensors.set("output",conv.tensors.get("output")[start:stop,:,:,:])
+                    relu.tensors.set("input",relu.tensors.get("input")[:,start:stop,:,:])
+                    relu.tensors.set("mask",relu.tensors.get("input")[:,start:stop,:,:])
+                    relu.tensors.set("output",relu.tensors.get("output")[:,start:stop,:,:])
+
+                   
                     #修改conv的kernel
                     conv_kernel_tensor = op.conv.tensors.get("kernel")
                     conv_kernel_tensor = conv_kernel_tensor[out_channel_start:out_channel_stop,:,:,:]
@@ -184,12 +201,60 @@ class ForwardFuseConvRelu(Operator):
             #3.分割width和height
             #weight和height分一次分割，还是分两次？
             #分到最后剩的不是正方形，需要补领吗？补领的话在哪里补？
-            
+            conv_input = split_instance.conv.tensors.get("input")
+            conv_width = conv_input.shape[3]
+            conv_width_limit = conv_input.shape_limit[3]
+            conv_width_overlap = 0
+            if conv_width > conv_width_limit:
+                for idx in range(0,conv_width+1,conv_width_limit - conv_width_overlap):
+                    op = copy.copy(split_instance)
+                    op.conv.attrs.set("width",conv_width_limit)
+                    op.conv.attrs.set("height",conv_width_limit)
+                    #分块后下标的开始和结束
+                    start = idx
+                    stop = idx+conv_width_limit
+                    #修改conv的input
+                    conv_input_tensor = op.conv.tensors.get("input")
+                    conv_input_tensor = conv_input_tensor[:,:,start:stop,start:stop]
+                    op.conv.tensors.set("input",conv_input_tensor)
+
+                    start,stop = convert_range(start,stop)
+                    stop = min(stop,op.conv.tensors.get("output").shape_limit[3])
+                    #修改conv的output
+                    conv_output_tensor = op.conv.tensors.get("output")
+                    conv_output_tensor = conv_output_tensor[:,:,start:stop,start:stop]
+                    op.conv.tensors.set("output",conv_output_tensor)
+
+                    #修改relu的input
+                    relu_input_tensor = op.relu.tensors.get("input")
+                    relu_input_tensor = relu_input_tensor[:,:,start:stop,start:stop]
+                    op.relu.tensors.set("input",relu_input_tensor)
+
+                    #修改relu的mask
+                    relu_mask_tensor = op.relu.tensors.get("mask")
+                    relu_mask_tensor = relu_mask_tensor[:,:,start:stop,start:stop]
+                    op.relu.tensors.set("mask",relu_mask_tensor)
+
+                    #修改relu的output
+                    relu_output_tensor = op.relu.tensors.get("output")
+                    relu_output_tensor = relu_output_tensor[:,:,start:stop,start:stop]
+                    op.relu.tensors.set("output",relu_output_tensor)
+
+                    #加到计算图上
+                    op.connect_predecessor(split_instance.predecessor)
+                    op.connect_successor(split_instance.successor)
+                    
+                    #加到队列里，用于后续在其他维度做分割
+                    queue.put(op)
+                #从计算图里删掉自己
+                split_instance.disconnect_predecessor(split_instance.predecessor)
+                split_instance.disconnect_successor(split_instance.successor)
+                continue
             
 
-        #最后，从计算图里删掉自己
-        split_instance.disconnect_predecessor(split_instance.predecessor)
-        split_instance.disconnect_successor(split_instance.successor)
+        # #最后，从计算图里删掉自己
+        # split_instance.disconnect_predecessor(split_instance.predecessor)
+        # split_instance.disconnect_successor(split_instance.successor)
 
     def 
 
@@ -198,9 +263,9 @@ class ForwardFuseConvRelu(Operator):
     def split_width(self):
         
         
-# class BackwardFuseConvRelu(Operator):
-#     def __init__(self,attrs:BackwardFuseConvReluAttrs,tensors:BackwardFuseConvReluTensors):
-#         super().__init__(type=OperatorType.BACKWARD_FUSE_CONV_RELU,
+# class BackwardConvRelu(Operator):
+#     def __init__(self,attrs:BackwardConvReluAttrs,tensors:BackwardConvReluTensors):
+#         super().__init__(type=OperatorType.BACKWARD_CONV_RELU,
 #                         attrs=attrs,
 #                         tensors=tensors,
 #                         name=unique_class_name(self))

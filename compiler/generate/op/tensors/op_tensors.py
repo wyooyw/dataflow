@@ -1,4 +1,5 @@
 import collections
+import copy
 class OpTensors:
     """算子中使用到的
     """
@@ -31,3 +32,18 @@ class OpTensors:
     
     def set(self,key,value):
         self.tensors[key] = value
+
+    def __copy__(self):
+        """复制对象
+
+        这里复制后,type(copy_self)会变成OpTensor,而不是子类,目前不影响,后续最好处理一下。
+        """
+        copy_self = OpTensors()
+        copy_self.tensors = copy.copy(self.tensors)
+        copy_self.input = copy.copy(self.input)
+        copy_self.output = copy.copy(self.output)
+        copy_self.output_idx = self.output_idx
+        copy_self.input_idx = self.input_idx
+        copy_self.op = self.op
+        return copy_self
+        

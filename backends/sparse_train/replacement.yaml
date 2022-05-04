@@ -1,0 +1,27 @@
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  replacement: ForwardConvRelu
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardMaxpool
+  replacement: ForwardConvReluMaxpool
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardMaxpool
+  - ForwardBatchnorm
+  replacement: ForwardConvReluMaxpoolBatchnorm
+- pattern:
+  - BackwardConv
+  - BackwardRelu
+  - BackwardMaxpool
+  replacement: BackwardConvReluMaxpool
+- pattern:
+  - BackwardConv
+  - BackwardRelu
+  - BackwardMaxpool
+  - BackwardBatchnorm
+  replacement: BackwardConvReluMaxpoolBatchnorm
+

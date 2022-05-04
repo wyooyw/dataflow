@@ -1,4 +1,5 @@
 from enum import Enum
+from compiler.utils import unique_class_name
 class StorageType(Enum):
     WEIGHT=0
     ACTIVATION=1
@@ -11,6 +12,10 @@ class Storage:
         self.addr = addr
         self.size = size
         self.content = content
+        self.name = unique_class_name(self)
+    
+    def __str__(self):
+        return f"[Storage] name={self.name}"
 
 if __name__=="__main__":
     print(help(StorageType))

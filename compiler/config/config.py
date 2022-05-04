@@ -6,7 +6,7 @@ class Config:
     def __init__(self):
         self.merge_config = self.load("./compiler/config/merge.yaml")
         self.op_config = self.load("./compiler/config/op.yaml")
-        self.deal_merge_config()
+        self.deal_op_config()
         print(json.dumps(self.op_config,indent=2))
         
     def load(self,path:str):
@@ -15,7 +15,9 @@ class Config:
         data = yaml.load(file_data,Loader=yaml.FullLoader)    
         return data
 
-    def deal_merge_config(self):
+    def deal_op_config(self):
+        """对op.yaml里的配置做预处理
+        """
         for op in self.op_config["operators"]:
             for tensor in op["tensors"]:
                 if tensor.get("grad",False)==True:

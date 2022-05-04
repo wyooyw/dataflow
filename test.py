@@ -1,5 +1,7 @@
 from compiler.target_gen.memory.memory_manager import MemoryManager
 from compiler.target_gen.memory.segment import Segment,SegmentType
+from compiler.target_gen.memory.tensor import Tensor
+from compiler.target_gen.memory.storage import Storage
 from compiler.generate.net.net import Net
 from compiler.generate.op.conv import ConvDualGenerator,ForwardConv2d
 from compiler.generate.op.relu import ReluDualGenerator,ForwardRelu
@@ -81,9 +83,17 @@ class MyClass:
 def testConfig():
     codegen = CodeGen()
     codegen.generate_operator()
-
+def testTensor():
+    storage = Storage(100,[],0)
+    tensor = Tensor(storage=storage,shape=[2,3,4,4],addr=-1,offset=0,stride=[48,16,4,1])
+    new_tensor = tensor[0:2,1:3,2:4,1:4]
+    new_new_tensor = new_tensor[0:1,0:2,0:1,1:3]
+    print(tensor,tensor.storage)
+    print(new_tensor,new_tensor.storage)
+    print(new_new_tensor,new_new_tensor.storage)
 if __name__=="__main__":
     # testPointer()
     # testDualGenerator()
     # testMemoryManager()
-    testConfig()
+    # testConfig()
+    testTensor()

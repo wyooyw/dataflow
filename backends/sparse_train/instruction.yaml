@@ -1,0 +1,17 @@
+setting:
+  width: 32
+  operate_width: 6
+meta_instr:
+- name: tensor_port_instr
+  layout:
+  - name: tensor
+    width: 22
+  - name: port
+    width: 4
+instr:
+- name: send
+  type: tensor_port_instr
+  code: "000001"
+- name: receive
+  type: tensor_port_instr
+  code: "000010"
