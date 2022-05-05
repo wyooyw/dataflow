@@ -5,9 +5,9 @@ class Tensor:
     # count = 0
     def __init__(self,storage:Storage,
                         shape:tuple[int],
-                        addr,
-                        offset,
-                        stride:tuple[int]):
+                        addr=None,
+                        offset=None,
+                        stride:tuple[int]=None):
         self.addr = addr
         self.storage = storage
 

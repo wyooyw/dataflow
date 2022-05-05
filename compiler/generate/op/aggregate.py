@@ -19,9 +19,9 @@ class AggregateDualGenerator(DualGenerator):
         input_2 = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
         output_grad =  MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
 
-        self.forward_op.input_1.set(input_1)
-        self.forward_op.input_2.set(input_2)
-        self.backward_op.output_grad.set(output_grad)
+        self.forward.input_1.set(input_1)
+        self.forward.input_2.set(input_2)
+        self.backward.output_grad.set(output_grad)
 
 class ForwardAggregate(Operator):
     def __init__(self):

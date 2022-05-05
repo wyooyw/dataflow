@@ -112,19 +112,5 @@ assert input.grad==s2train_input.grad
 
 模拟S2Train的接口，但其计算是使用软件方式调库直接实现的。在硬件那边可以仿真之前，用这个来测。
 
-# 编码规范
+## 
 
-编码规范应符合PEP8 https://peps.python.org/pep-0008/
-
-检查:pycodestyle filename
-修改:autopep8 --in-place --aggressive filename
-
-## 命名
-
-除了类名采用大写字母开头的驼峰命名，其他一律采用“小写+下划线”的形式
-
-## 注释
-
-# 设计原则
-
-## 最大程度利用pytorch的算子，实在不行再自己写

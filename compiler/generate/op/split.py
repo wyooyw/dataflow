@@ -19,9 +19,9 @@ class SplitDualGenerator(DualGenerator):
         output_grad_1 =  MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
         output_grad_2 =  MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
 
-        self.forward_op.input.set(input)  
-        self.backward_op.output_grad_1.set(output_grad_1)   
-        self.backward_op.output_grad_2.set(output_grad_2)
+        self.forward.input.set(input)  
+        self.backward.output_grad_1.set(output_grad_1)   
+        self.backward.output_grad_2.set(output_grad_2)
 
 class ForwardSplit(Operator):
     def __init__(self):

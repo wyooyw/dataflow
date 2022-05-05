@@ -106,6 +106,7 @@ class ForwardConvRelu(Operator):
         queue.put(self)
         while not queue.empty():
             split_instance = queue.get()
+            is_split = False
 
             #1.分割out_channel
             conv_weight = split_instance.conv.tensors.get("weight")
@@ -119,84 +120,46 @@ class ForwardConvRelu(Operator):
                     start = idx
                     stop = min(idx+out_channel_limit,out_channel)
 
-                    conv = op.conv
-                    relu = op.relu
+                    conv,relu = op.conv,op.relu
                     conv.tensors.set("kernel",conv.tensors.get("kernel")[start:stop,:,:,:])
                     conv.tensors.set("output",conv.tensors.get("output")[start:stop,:,:,:])
                     relu.tensors.set("input",relu.tensors.get("input")[:,start:stop,:,:])
                     relu.tensors.set("mask",relu.tensors.get("input")[:,start:stop,:,:])
                     relu.tensors.set("output",relu.tensors.get("output")[:,start:stop,:,:])
 
-                   
-                    #修改conv的kernel
-                    conv_kernel_tensor = op.conv.tensors.get("kernel")
-                    conv_kernel_tensor = conv_kernel_tensor[out_channel_start:out_channel_stop,:,:,:]
-                    op.conv.tensors.set("kernel",kernel_tensor)
-                    #修改conv的output
-                    conv_output_tensor = op.conv.tensors.get("output")
-                    conv_output_tensor = conv_output_tensor[:,out_channel_start:out_channel_stop,:,:]
-                    op.conv.tensors.set("output",conv_output_tensor)
-                    #修改relu的input
-                    relu_input_tensor = op.relu.tensors.get("input")
-                    relu_input_tensor = relu_input_tensor[:,out_channel_start:out_channel_stop,:,:]
-                    op.relu.tensors.set("input",relu_input_tensor)
-                    #修改relu的mask
-                    relu_mask_tensor = op.relu.tensors.get("mask")
-                    relu_mask_tensor = relu_mask_tensor[:,out_channel_start:out_channel_stop,:,:]
-                    op.relu.tensors.set("mask",relu_mask_tensor)
-                    #修改relu的output
-                    relu_output_tensor = op.relu.tensors.get("output")
-                    relu_output_tensor = relu_output_tensor[:,out_channel_start:out_channel_stop,:,:]
-                    op.relu.tensors.set("output",relu_output_tensor)
                     #加到计算图上
                     op.connect_predecessor(split_instance.predecessor)
                     op.connect_successor(split_instance.successor)
                     #加到队列里，用于后续在其他维度做分割
                     queue.put(op)
-                #从计算图里删掉自己
-                split_instance.disconnect_predecessor(split_instance.predecessor)
-                split_instance.disconnect_successor(split_instance.successor)
-                continue
+                
+                is_split = True
             
             #2.分割batch_size
             conv_input = split_instance.conv.tensors.get("input")
             batch_size = conv_input.shape[0]
             batch_size_limit = conv_input.shape_limit[0]
-            if batch_size > batch_size_limit:
+            if is_split==False and batch_size > batch_size_limit:
                 for idx in range(0,batch_size+1,batch_size_limit):
                     op = copy.copy(split_instance)
                     #分块后下标的开始和结束
-                    batch_size_start = idx
-                    batch_size_stop = min(idx+batch_size_limit,batch_size)
-                    #修改conv的kernel
-                    conv_input_tensor = op.conv.tensors.get("input")
-                    conv_input_tensor = conv_input_tensor[batch_size_start:batch_size_stop,:,:,:]
-                    op.conv.tensors.set("input",conv_input_tensor)
-                    #修改conv的output
-                    conv_output_tensor = op.conv.tensors.get("output")
-                    conv_output_tensor = conv_output_tensor[batch_size_start:batch_size_stop,:,:,:]
-                    op.conv.tensors.set("output",conv_output_tensor)
-                    #修改relu的input
-                    relu_input_tensor = op.relu.tensors.get("input")
-                    relu_input_tensor = relu_input_tensor[batch_size_start:batch_size_stop,:,:,:]
-                    op.relu.tensors.set("input",relu_input_tensor)
-                    #修改relu的mask
-                    relu_mask_tensor = op.relu.tensors.get("mask")
-                    relu_mask_tensor = relu_mask_tensor[batch_size_start:batch_size_stop,:,:,:]
-                    op.relu.tensors.set("mask",relu_mask_tensor)
-                    #修改relu的output
-                    relu_output_tensor = op.relu.tensors.get("output")
-                    relu_output_tensor = relu_output_tensor[batch_size_start:batch_size_stop,:,:,:]
-                    op.relu.tensors.set("output",relu_output_tensor)
+                    start = idx
+                    stop = min(idx+batch_size_limit,batch_size)
+
+                    conv,relu = op.conv,op.relu
+                    conv.tensors.set("input",conv.tensors.get("input")[start:stop,:,:,:])
+                    conv.tensors.set("output",conv.tensors.get("output")[start:stop,:,:,:])
+                    relu.tensors.set("input",relu.tensors.get("input")[start:stop,:,:,:])
+                    relu.tensors.set("mask",relu.tensors.get("mask")[start:stop,:,:,:])
+                    relu.tensors.set("output",relu.tensors.get("output")[start:stop,:,:,:])
+
                     #加到计算图上
                     op.connect_predecessor(split_instance.predecessor)
                     op.connect_successor(split_instance.successor)
                     #加到队列里，用于后续在其他维度做分割
                     queue.put(op)
-                #从计算图里删掉自己
-                split_instance.disconnect_predecessor(split_instance.predecessor)
-                split_instance.disconnect_successor(split_instance.successor)
-                continue
+                
+                is_split = True
 
             #3.分割width和height
             #weight和height分一次分割，还是分两次？
@@ -205,40 +168,24 @@ class ForwardConvRelu(Operator):
             conv_width = conv_input.shape[3]
             conv_width_limit = conv_input.shape_limit[3]
             conv_width_overlap = 0
-            if conv_width > conv_width_limit:
+            if is_split==False and conv_width > conv_width_limit:
                 for idx in range(0,conv_width+1,conv_width_limit - conv_width_overlap):
                     op = copy.copy(split_instance)
                     op.conv.attrs.set("width",conv_width_limit)
                     op.conv.attrs.set("height",conv_width_limit)
                     #分块后下标的开始和结束
                     start = idx
-                    stop = idx+conv_width_limit
-                    #修改conv的input
-                    conv_input_tensor = op.conv.tensors.get("input")
-                    conv_input_tensor = conv_input_tensor[:,:,start:stop,start:stop]
-                    op.conv.tensors.set("input",conv_input_tensor)
+                    stop = idx + conv_width_limit
+
+                    conv,relu = op.conv,op.relu
+                    conv.tensors.set("input",conv.tensors.get("input")[:,:,start:stop,start:stop])
 
                     start,stop = convert_range(start,stop)
                     stop = min(stop,op.conv.tensors.get("output").shape_limit[3])
-                    #修改conv的output
-                    conv_output_tensor = op.conv.tensors.get("output")
-                    conv_output_tensor = conv_output_tensor[:,:,start:stop,start:stop]
-                    op.conv.tensors.set("output",conv_output_tensor)
-
-                    #修改relu的input
-                    relu_input_tensor = op.relu.tensors.get("input")
-                    relu_input_tensor = relu_input_tensor[:,:,start:stop,start:stop]
-                    op.relu.tensors.set("input",relu_input_tensor)
-
-                    #修改relu的mask
-                    relu_mask_tensor = op.relu.tensors.get("mask")
-                    relu_mask_tensor = relu_mask_tensor[:,:,start:stop,start:stop]
-                    op.relu.tensors.set("mask",relu_mask_tensor)
-
-                    #修改relu的output
-                    relu_output_tensor = op.relu.tensors.get("output")
-                    relu_output_tensor = relu_output_tensor[:,:,start:stop,start:stop]
-                    op.relu.tensors.set("output",relu_output_tensor)
+                    conv.tensors.set("output",conv.tensors.get("output")[:,:,start:stop,start:stop])
+                    relu.tensors.set("input",relu.tensors.get("input")[:,:,start:stop,start:stop])
+                    relu.tensors.set("mask",relu.tensors.get("mask")[:,:,start:stop,start:stop])
+                    relu.tensors.set("output",relu.tensors.get("output")[:,:,start:stop,start:stop])
 
                     #加到计算图上
                     op.connect_predecessor(split_instance.predecessor)
@@ -246,10 +193,13 @@ class ForwardConvRelu(Operator):
                     
                     #加到队列里，用于后续在其他维度做分割
                     queue.put(op)
+
+                is_split = True
+
+            if is_split:
                 #从计算图里删掉自己
                 split_instance.disconnect_predecessor(split_instance.predecessor)
                 split_instance.disconnect_successor(split_instance.successor)
-                continue
             
 
         # #最后，从计算图里删掉自己

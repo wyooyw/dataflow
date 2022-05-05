@@ -8,6 +8,10 @@ class OperatorType(Enum):
     FORWARD_CONV = 0
     FORWARD_RELU = 1
     FORWARD_MAXPOOL = 2
+    FORWARD_FLATTEN = 3
+    FORWARD_SOFTMAX = 4
+    FORWARD_ENTROPY = 5
+    FORWARD_LINEAR = 6
 
     # 51~100 融合算子
     FORWARD_FUSE_CONV_RELU = 51
@@ -16,6 +20,10 @@ class OperatorType(Enum):
     BACKWARD_CONV = 100
     BACKWARD_RELU = 101
     BACKWARD_MAXPOOL = 102
+    BACKWARD_FLATTEN = 103
+    BACKWARD_SOFTMAX = 104
+    BACKWARD_ENTROPY = 105
+    BACKWARD_LINEAR = 106
 
     # 151~200 融合算子的反传
     BACKWARD_FUSE_CONV_RELU = 151
@@ -23,9 +31,10 @@ class OperatorType(Enum):
     # 201,202 分叉算子和聚合算子
     SPLIT = 201
     AGGREGATE = 202
+    
 
 class Operator:
-    def __init__(self,type:OperatorType,name="",attrs:Attrs=Attrs(),tensors:OpTensors=OpTensors()):
+    def __init__(self,type:OperatorType,name="",attrs:Attrs=Attrs(),tensors:OpTensors=OpTensors(),in_shape=[],out_shape=[]):
         self.name = name        #算子名称
         self.type = type        #算子类型
         self.predecessor = set()   #前驱算子
@@ -35,6 +44,8 @@ class Operator:
         attrs.op = self
         self.tensors = tensors  #算子使用的张量
         tensors.op = self
+        self.in_shape = in_shape
+        self.out_shape = out_shape
         
         # split节点有两个后继节点
         # aggregate算子有两个前驱节点
@@ -120,7 +131,7 @@ class Operator:
         """
         input_names = [op.name for op in self.predecessor]
         output_names = [op.name for op in self.successor]
-        return f"{self.name},(input={input_names}, output={output_names})"
+        return f"{self.name},(predecessor={input_names}, successor={output_names}),in_shape={self.in_shape},out_shape={self.out_shape}"
 
     def __copy__(self):
         """复制算子
@@ -133,3 +144,15 @@ class Operator:
         #type(self)为子类
         copy_self = type(self)(attrs=copy_attrs,tensors=copy_tensors)
         return copy_self
+
+    @classmethod
+    def get_out_shape_by_in_shape(cls,in_shape,attr):
+        """根据输入张量shape和算子的属性,推算输出张量shape
+        """
+        assert False,"This function should be implemented."
+
+    @classmethod
+    def get_in_shape_by_out_shape(cls,out_shape,attr):
+        """根据输出张量shape和算子的属性,推算输入张量shape
+        """
+        assert False,"This function should be implemented."

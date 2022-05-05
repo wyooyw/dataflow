@@ -1,0 +1,9 @@
+- origin:
+    op: call_module
+    type: nn.Conv2d
+  new: ConvDualGenerator
+- origin:
+    op: call_module
+    type: nn.ReLU
+  new: ReluDualGenerator
+  
