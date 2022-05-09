@@ -1,0 +1,14 @@
+# - pattern:
+#   - ForwardConv
+#   - ForwardRelu
+#   - ForwardAdd
+#   replace: ForwardConvReluAdd
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardAdd
+  replace: ForwardConvReluAdd
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  replace: ForwardConvRelu

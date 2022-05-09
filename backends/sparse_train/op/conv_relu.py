@@ -1,12 +1,14 @@
 from compiler.generate.operator import Operator,OperatorType
+from compiler.generate.op.conv import ForwardConv
+from compiler.generate.op.relu import ForwardRelu
+from compiler.generate.op.attrs.attrs import Attrs
+from compiler.generate.op.tensors.op_tensors import OpTensors
 from compiler.utils.unique_class_name import unique_class_name
 import compiler.utils.utils as utils
-from compiler.generate.op.attrs.conv_relu_attrs import ForwardConvReluAttrs
-from compiler.generate.op.tensors.conv_relu_tensors import ForwardConvReluTensors
 from queue import Queue
 class ForwardConvRelu(Operator):
     def __init__(self,conv,relu):
-        super().__init__(type=OperatorType.OTHER,
+        super().__init__(type=OperatorType.BACKEND,
                         attrs=Attrs(),
                         tensors=OpTensors(),
                         name=unique_class_name(self))
@@ -21,31 +23,11 @@ class ForwardConvRelu(Operator):
         
 
     @classmethod
-    def replace_from(self,forward_conv:ForwardConv,forward_relu:ForwardRelu):
+    def replace_from(self,find_ops):
         """将ForwardConv和ForwardRelu合并为ForwardConvRelu
         """
-        #创建新算子
-        forward_conv_relu = ForwardConvRelu(conv=forward_conv,relu=forward_relu)
-        
-        #合并后继节点
-        origin = set([forward_conv,forward_relu])
-        successors = (conv.successor | relu.successor) - origin
-        for successor in successors:
-            successor.disconnect_predecessor(*origin)
-            successor.connect_predecessor(forward_conv_relu)
-
-        #合并前驱节点
-        predecessors = (conv.predecessor | relu.predecessor) - origin
-        for predecessor in predecessors:
-            predecessor.disconnect_successor(*origin)
-            predecessor.connect_successor(forward_conv_relu)
-
-        #替换网络中的算子
-        net = forward_conv.net
-        net.remove_operator(*origin)
-        net.add_operator(forward_conv_relu)
-
-        return forward_conv_relu
+        forward_conv,forward_relu = find_ops
+        return ForwardConvRelu(conv=forward_conv,relu=forward_relu)
 
     def generate_target_code(self,instr_tool):
         conv = self.conv
@@ -206,16 +188,9 @@ class ForwardConvRelu(Operator):
         # split_instance.disconnect_predecessor(split_instance.predecessor)
         # split_instance.disconnect_successor(split_instance.successor)
 
-    def 
+    
 
 
     @classmethod
     def split_width(self):
-        
-        
-# class BackwardConvRelu(Operator):
-#     def __init__(self,attrs:BackwardConvReluAttrs,tensors:BackwardConvReluTensors):
-#         super().__init__(type=OperatorType.BACKWARD_CONV_RELU,
-#                         attrs=attrs,
-#                         tensors=tensors,
-#                         name=unique_class_name(self))
+        pass

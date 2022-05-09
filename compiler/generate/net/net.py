@@ -1,4 +1,5 @@
 import collections
+from queue import Queue
 class Net:
     def __init__(self):
         self.ops = set()
@@ -21,13 +22,23 @@ class Net:
             op.net = None
     
     def __str__(self):
-        """将网络转换为字符串
+        """将网络转换为字符串,按照算子的拓扑顺序
         """
         strs = []
-        op = self.first_op
-        while op:
+        queue = Queue()
+        queue.put(self.first_op)
+        record = {}
+        
+        while not queue.empty():
+            op = queue.get()
+            if len(op.predecessor)>1:
+                if op not in record:
+                    record[op] = len(op.predecessor) - 1
+                    continue
+                elif record[op]>1:
+                    record[op] -= 1
+                    continue
             strs.append(str(op))
-            op = list(op.successor)[0] if len(op.successor)>0 else None
-        # strs = [str(op) for op in self.ops]
+            for suc in op.successor:
+                queue.put(suc)
         return "\n".join(strs)
-

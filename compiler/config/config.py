@@ -4,10 +4,11 @@ from compiler.utils import singleton
 @singleton
 class Config:
     def __init__(self):
-        self.merge_config = self.load("./compiler/config/merge.yaml")
-        self.op_config = self.load("./compiler/config/op.yaml")
-        self.deal_op_config()
-        print(json.dumps(self.op_config,indent=2))
+        # self.replace_config = self.load("./backends/sparse_train/replace.yaml")
+        # self.op_config = self.load("./compiler/config/op.yaml")
+        self.convert_config = self.load("./convert.yaml")
+        # self.deal_op_config()
+        # print(json.dumps(self.op_config,indent=2))
         
     def load(self,path:str):
         with open(path, 'r', encoding="utf-8") as f:

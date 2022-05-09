@@ -14,7 +14,7 @@ class OperatorType(Enum):
     FORWARD_LINEAR = 6
 
     # 51~100 融合算子
-    FORWARD_FUSE_CONV_RELU = 51
+    FORWARD_CONV_RELU = 51
 
     # 101~150 单个算子的反传
     BACKWARD_CONV = 100
@@ -26,11 +26,13 @@ class OperatorType(Enum):
     BACKWARD_LINEAR = 106
 
     # 151~200 融合算子的反传
-    BACKWARD_FUSE_CONV_RELU = 151
+    BACKWARD_CONV_RELU = 151
 
     # 201,202 分叉算子和聚合算子
     SPLIT = 201
     AGGREGATE = 202
+
+    BACKEND = 1000
     
 
 class Operator:
@@ -50,15 +52,17 @@ class Operator:
         # split节点有两个后继节点
         # aggregate算子有两个前驱节点
         # 其他算子只能由一个前驱和一个后继节点
-        if self.type==OperatorType.SPLIT:
-            self.max_predecessor = 1
-            self.max_successor = 2
-        elif self.type==OperatorType.AGGREGATE:
-            self.max_predecessor = 2
-            self.max_successor = 1
-        else:
-            self.max_predecessor = 1
-            self.max_successor = 1
+        # if self.type==OperatorType.SPLIT:
+        #     self.max_predecessor = 1
+        #     self.max_successor = 2
+        # elif self.type==OperatorType.AGGREGATE:
+        #     self.max_predecessor = 2
+        #     self.max_successor = 1
+        # else:
+        #     self.max_predecessor = 1
+        #     self.max_successor = 1
+        self.max_predecessor = 2
+        self.max_successor = 2
         
     def add_predecessor(self,*ops):
         """单向添加前驱算子
@@ -131,7 +135,8 @@ class Operator:
         """
         input_names = [op.name for op in self.predecessor]
         output_names = [op.name for op in self.successor]
-        return f"{self.name},(predecessor={input_names}, successor={output_names}),in_shape={self.in_shape},out_shape={self.out_shape}"
+        is_backend = '*' if self.type==OperatorType.BACKEND else ''
+        return f"{is_backend}{self.name},(predecessor={input_names}, successor={output_names})"#,in_shape={self.in_shape},out_shape={self.out_shape}
 
     def __copy__(self):
         """复制算子
