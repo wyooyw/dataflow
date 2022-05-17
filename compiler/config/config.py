@@ -1,7 +1,7 @@
 import yaml
 import json
-from compiler.utils import singleton
-@singleton
+# from compiler.utils import singleton
+# @singleton
 class Config:
     def __init__(self):
         # self.replace_config = self.load("./backends/sparse_train/replace.yaml")
@@ -33,4 +33,5 @@ class Config:
                         if tensor.endswith(".grad"):
                             tensor = tensor.replace(".grad","_grad")
                             op[direction][section][idx] = tensor
-                
+if __name__=="__main__":
+    print(Config().load("backends/sparse_train/replace.yaml"))

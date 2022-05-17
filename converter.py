@@ -12,7 +12,12 @@ from compiler.generate.op.entropy import DualEntropy
 from compiler.generate.op.relu import DualRelu
 from compiler.generate.op.flatten import DualFlatten
 from compiler.generate.op.linear import DualLinear
-from compiler.generate.op.add import DualAdd
+from compiler.generate.op.add import DualAdd,BackwardAdd
+from compiler.generate.op.maxpool import DualMaxpool
+from compiler.generate.op.batchnorm import DualBatchnorm
+from compiler.generate.op.edge import DualEdge
+from compiler.generate.op.split import DualSplit,ForwardSplit
+
 # from compiler.generate.op import *
 from compiler.generate.net.net import Net
 
@@ -47,7 +52,9 @@ class Converter(object):
         config_call_function = Config().convert_config["call_function"]
         for node in graph.nodes:
             if node.op=="placeholder":
-                pass
+                dual = DualEdge(in_shape=self.in_shape)
+                self.net.add_operator(dual.forward,dual.backward)
+                self.map[node] = dual
             elif node.op=="output":
                 assert len(node.args)==1,"Convert output error."
                 in_shape = self.get_in_shape(node)
@@ -57,16 +64,13 @@ class Converter(object):
                 self.net.add_operator(dual_softmax.forward,dual_softmax.backward)
                 self.net.add_operator(dual_entropy.forward,dual_entropy.backward)
                 
-                dual_last.forward.connect_successor(dual_softmax.forward)
-                dual_softmax.forward.connect_successor(dual_entropy.forward)
-                dual_last.backward.connect_predecessor(dual_softmax.backward)
-                dual_softmax.backward.connect_predecessor(dual_entropy.backward)
+                dual_last.forward.connect_successor(dual_softmax.forward,_share_storage=True)
+                dual_softmax.forward.connect_successor(dual_entropy.forward,_share_storage=True)
+                dual_last.backward.connect_predecessor(dual_softmax.backward,_share_storage=True)
+                dual_softmax.backward.connect_predecessor(dual_entropy.backward,_share_storage=True)
 
                 dual_entropy.forward.connect_successor(dual_entropy.backward)
             elif node.op=="call_module":
-                # if node.target=="conv2":
-                #     import ipdb
-                #     ipdb.set_trace()
                 flag = False
                 for item in config_call_module:
                     module = named_modules[node.target]
@@ -79,8 +83,10 @@ class Converter(object):
                         for arg in node.args:
                             if arg in self.map:
                                 predecessor_dual = self.map[arg]
-                                predecessor_dual.forward.connect_successor(dual.forward)
-                                predecessor_dual.backward.connect_predecessor(dual.backward)
+                                predecessor_dual.forward.connect_successor(dual.forward,_share_storage=True)
+                                predecessor_dual.backward.connect_predecessor(dual.backward,_share_storage=True)
+                        if len(node.users)>1:
+                            self._add_split(node,in_shape=in_shape)
                         flag = True
                         break
                 assert flag,f"{type(module)} was not implemented in sparsetrain-IR."
@@ -95,40 +101,46 @@ class Converter(object):
                         for arg in node.args:
                             if arg in self.map:
                                 pre_dual = self.map[arg]
-                                pre_dual.forward.connect_successor(dual.forward)
-                                pre_dual.backward.connect_predecessor(dual.backward)
-                    flag = True
-                    break
+                                pre_dual.forward.connect_successor(dual.forward,_share_storage=True)
+                                pre_dual.backward.connect_predecessor(dual.backward,_share_storage=True)
+                        if len(node.users)>1:
+                            self._add_split(node,in_shape=in_shape)
+                        flag = True
+                        break
                 assert flag,f"{node.target} was not implemented in sparsetrain-IR."
+        self._clean_no_use()
+    def _add_split(self,node,in_shape):
+        assert len(node.users)==2,"Split num greater than 2,not implemented!"
+        dual_split = DualSplit(in_shape)
+        dual = self.map[node]
+        dual.forward.connect_successor(dual_split.forward,_share_storage=True)
+        dual.backward.connect_predecessor(dual_split.backward,_share_storage=True)
+        self.net.add_operator(dual_split.forward,dual_split.backward)
+        self.map[node] = dual_split
 
-# class MyNet(Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.conv1 = nn.Conv2d(3,4,5)
-#         self.relu1 = nn.ReLU()
-#         # self.pool = nn.MaxPool2d(2,2)
-#         self.conv2 = nn.Conv2d(4,5,5)
-#         self.relu2 = nn.ReLU()
-#         self.flatten = nn.Flatten()
-#         self.fc1 = nn.Linear(512,256)
-#         self.fc2 = nn.Linear(256,10)
-    
-#     def forward(self,x):
-#         x = self.conv1(x)
-#         x = self.relu1(x)
-#         # x = self.pool(x)
-#         y = self.conv2(x)
-#         y = self.relu2(y)
-#         y = y + x
-#         y = self.flatten(y)
-#         y = self.fc1(y)
-#         y = self.fc2(y)
-#         return y
+    def _clean_no_use(self):
+        """移除ForwardSplit和BackwardAdd，这两个没用
+        """
+        for op in self.net.topo():
+            if type(op)==BackwardAdd:
+                print(f"[Conventer] Remove no-use node: {op.name}")
+                predecessor_set = [*op.predecessor]
+                successor_set = [*op.successor]
+                for predecessor in predecessor_set:
+                    predecessor.disconnect_successor(op)
+                    predecessor.connect_successor(*successor_set)
 
-if __name__=="__main__":
-    net = MyNet()
-    converter = Converter(net,in_shape=[32,3,32,32])
-    # print(converter.trace.graph)
-    converter.convert()
-    print(converter.net)
+                for successor in successor_set:
+                    successor.disconnect_predecessor(op)
+                    successor.connect_predecessor(*predecessor_set)
+            elif type(op)==ForwardSplit:
+                print(f"[Conventer] Remove no-use node: {op.name}")
+                predecessor_set = [*op.predecessor]
+                successor_set = [*op.successor]
+                for predecessor in predecessor_set:
+                    predecessor.disconnect_successor(op)
+                    predecessor.connect_successor(*successor_set)
 
+                for successor in successor_set:
+                    successor.disconnect_predecessor(op)
+                    successor.connect_predecessor(*predecessor_set)

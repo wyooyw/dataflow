@@ -8,8 +8,13 @@ from compiler.generate.op.relu import DualRelu,ForwardRelu,BackwardRelu
 from compiler.generate.op.flatten import DualFlatten,ForwardFlatten,BackwardFlatten
 from compiler.generate.op.linear import DualLinear,ForwardLinear,BackwardLinear
 from compiler.generate.op.add import DualAdd,ForwardAdd,BackwardAdd
+from compiler.generate.op.split import DualSplit,ForwardSplit,BackwardSplit
+from compiler.generate.op.batchnorm import DualBatchnorm,ForwardBatchnorm,BackwardBatchnorm
+from compiler.generate.op.maxpool import DualMaxpool,ForwardMaxpool,BackwardMaxpool
 from backends.sparse_train.op import *
 from functools import reduce
+
+DoubleBn = "DoubleBn"
 class ReplaceTool:
     def __init__(self,net:Net,config_path:str):
         self.net = net
@@ -26,6 +31,7 @@ class ReplaceTool:
         finder = Finder(net=self.net,pattern=pattern)
         find = finder.find()
         for f in find:
+           
             replace_op = replace.replace_from(f)
 
             #合并后继节点
@@ -41,7 +47,7 @@ class ReplaceTool:
             for predecessor in predecessors:
                 predecessor.disconnect_successor(*origin)
                 predecessor.connect_successor(replace_op)
-
+            
             #替换网络中的算子
             net = f[0].net
             net.remove_operator(*origin)
@@ -56,8 +62,10 @@ class Finder:
         self.pattern = pattern
         self.tmp = []
         self.tmp_idx = 0
+        self.topo_index = {}
         
     def find(self):
+        self.get_topo_index()
         result = []
         while True:
             begin_op = self.find_first_op()
@@ -87,29 +95,83 @@ class Finder:
         if len(ret)==0:
             return ret
 
-        #检查是否合法
-        valid = reduce(lambda x,y:x&y, [len(r.successor)==1 for r in ret[0:-1]])
-        if not valid:
-            return []
-
-        self.visit = self.visit | set(self.tmp)
         return ret
+
+    def is_valid(self,ret):
+        #检查是否合法
+        # valid = reduce(lambda x,y:x&y, [len(r.successor)==1 for r in ret[0:-1]])
+        origin = set(ret)
+        successor_set = reduce(lambda x,y:x&y, [r.successor for r in ret]) - origin
+        predecessor_set = reduce(lambda x,y:x&y, [r.predecessor for r in ret]) - origin
+        if len(successor_set)==0 or len(predecessor_set)==0:
+            return True
+
+        successor_index_min = min([self.topo_index[suc] for suc in successor_set])
+        predecessor_index_max = max([self.topo_index[suc] for suc in predecessor_set])
+        valid = predecessor_index_max < successor_index_min
+        return valid
+    
+    def get_topo_index(self):
+        for idx,op in enumerate(self.net.topo()):
+            self.topo_index[op] = idx
 
     def dfs(self,begin_op:Operator,step:int):
         ret = []
         if step==len(self.pattern)-1:
-            # self.visit = self.visit | set(self.tmp)
-            ret = [*self.tmp]
+            if self.is_valid(self.tmp):
+                self.visit = self.visit | set(self.tmp)
+                ret = [*self.tmp]
+            else:
+                ret = []
         else:
             successors = begin_op.successor
-            for successor in successors:
-                if not successor in self.visit:
-                    if type(successor) == self.pattern[step+1]:
-                        self.tmp.append(successor)
-                        ret = self.dfs(successor,step+1)
-                        self.tmp.pop()
-                        if len(ret)>0:
-                            break
+            if self.pattern[step+1]==DoubleBn:
+                successors = [*successors]
+                i = 0
+                for i in range(0,len(successors)):
+                    if successors[i] in self.visit:
+                        continue
+                    for j in range(i+1,len(successors)):
+                        if successors[j] in self.visit:
+                            continue
+                        if type(successors[i])==BackwardBatchnorm and type(successors[j])==BackwardBatchnorm:
+                            self.tmp.append(successors[i])
+                            self.tmp.append(successors[j])
+                            ret = self.dfs(successors[i],step+1)
+                            self.tmp.pop()
+                            self.tmp.pop()
+                            if len(ret)>0:
+                                break
+            else:
+                for successor in successors:
+                    if not successor in self.visit:
+                        if type(successor) == self.pattern[step+1]:
+                            self.tmp.append(successor)
+                            ret = self.dfs(successor,step+1)
+                            self.tmp.pop()
+                            if len(ret)>0:
+                                break
         return ret
+
+    # def dfs(self,begin_op:Operator,step:int):
+    #     ret = []
+    #     if step==len(self.pattern)-1:
+    #         if self.is_valid(self.tmp):
+    #             self.visit = self.visit | set(self.tmp)
+    #             ret = [*self.tmp]
+    #         else:
+    #             ret = []
+    #     else:
+    #         successors = begin_op.successor
+    #         for successor in successors:
+    #             if not successor in self.visit:
+    #                 if type(successor) == self.pattern[step+1]:
+    #                     self.tmp.append(successor)
+    #                     ret = self.dfs(successor,step+1)
+    #                     self.tmp.pop()
+    #                     if len(ret)>0:
+    #                         break
+    #     return ret
+    
 
     

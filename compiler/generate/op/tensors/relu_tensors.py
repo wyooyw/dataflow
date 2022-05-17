@@ -5,8 +5,8 @@ class ForwardReluTensors(OpTensors):
         self.tensors["mask"] = mask
         self.tensors["input"] = input
         self.tensors["output"] = output
-        self.input = ["input"]
-        self.output = ["output"]
+        self.input = input
+        self.output = output
 
 class BackwardReluTensors(OpTensors):
     def __init__(self,mask,input_grad,output_grad):
@@ -14,5 +14,5 @@ class BackwardReluTensors(OpTensors):
         self.tensors["mask"] = mask
         self.tensors["input_grad"] = input_grad
         self.tensors["output_grad"] = output_grad
-        self.input = ["output_grad"]
-        self.output = ["input_grad"]
+        self.input = output_grad
+        self.output = input_grad

@@ -32,7 +32,9 @@ class OperatorType(Enum):
     SPLIT = 201
     AGGREGATE = 202
 
-    BACKEND = 1000
+    FORWARD = 1000
+    BACKWARD = 1001
+    BACKEND = 1002
     
 
 class Operator:
@@ -61,8 +63,8 @@ class Operator:
         # else:
         #     self.max_predecessor = 1
         #     self.max_successor = 1
-        self.max_predecessor = 2
-        self.max_successor = 2
+        self.max_predecessor = 10
+        self.max_successor = 10
         
     def add_predecessor(self,*ops):
         """单向添加前驱算子
@@ -78,19 +80,30 @@ class Operator:
             assert len(self.successor)<self.max_successor,f"[{self.name}] Can't add more successor."
             self.successor.add(op)
     
-    def connect_predecessor(self,*ops):
+    def connect_predecessor(self,*ops,_share_storage=False):
         """双向添加前驱算子
         """
         for op in ops:
+            if _share_storage:
+                if type(self.get_tensors().input)==list:
+                    op.get_tensors().output.storage.same_as(self.get_tensors().input[len(self.predecessor)].storage)
+                else:
+                    op.get_tensors().output.storage.same_as(self.get_tensors().input.storage)
             self.add_predecessor(op)
             op.add_successor(self)
     
-    def connect_successor(self,*ops):
+    def connect_successor(self,*ops,_share_storage=False):
         """双向添加后继算子
         """
         for op in ops:
+            if _share_storage:
+                if type(op.get_tensors().input)==list:
+                    op.get_tensors().input[len(op.predecessor)].storage.same_as(self.get_tensors().output.storage)
+                else:
+                    op.get_tensors().input.storage.same_as(self.get_tensors().output.storage)
             self.add_successor(op)
             op.add_predecessor(self)
+            
     
     def next_output_to(self,op):
         """将本算子的输出指向后继算子的输入
@@ -108,12 +121,14 @@ class Operator:
         """单向删除前驱节点
         """
         for op in ops:
+            # print(f"[{self.name}] remove predecessor {op.name}")
             self.predecessor.discard(op)
     
     def remove_successor(self,*ops):
         """单向删除后继节点
         """
         for op in ops:
+            # print(f"[{self.name}] remove successor {op.name}")
             self.successor.discard(op)
 
     def disconnect_predecessor(self,*ops):
@@ -128,7 +143,7 @@ class Operator:
         """
         for op in ops:
             self.remove_successor(op)
-            op.remove_successor(self)
+            op.remove_predecessor(self)
 
     def __str__(self):
         """打印算子信息
@@ -136,7 +151,7 @@ class Operator:
         input_names = [op.name for op in self.predecessor]
         output_names = [op.name for op in self.successor]
         is_backend = '*' if self.type==OperatorType.BACKEND else ''
-        return f"{is_backend}{self.name},(predecessor={input_names}, successor={output_names})"#,in_shape={self.in_shape},out_shape={self.out_shape}
+        return f"{is_backend}{self.name},(predecessor={input_names}, successor={output_names})"#,in_shape={self.in_shape},out_shape={self.out_shape}"
 
     def __copy__(self):
         """复制算子
@@ -161,3 +176,8 @@ class Operator:
         """根据输出张量shape和算子的属性,推算输入张量shape
         """
         assert False,"This function should be implemented."
+
+    def get_tensors(self):
+        """获取张量所属的所有tensor
+        """
+        return self.tensors

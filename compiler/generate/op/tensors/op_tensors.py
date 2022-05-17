@@ -5,8 +5,8 @@ class OpTensors:
     """
     def __init__(self):
         self.tensors = collections.OrderedDict()
-        self.input = []
-        self.output = []
+        self.input = None
+        self.output = None
         self.output_idx = -1
         self.input_idx = -1
         self.op = None #该OpTensors的父元素

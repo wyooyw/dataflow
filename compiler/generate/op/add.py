@@ -9,7 +9,7 @@ import torch.nn as nn
 
 class DualAdd(Dual):
     def __init__(self,in_shape):
-        in_batch,in_channels,in_width,in_height = in_shape
+        in_batch,in_channels,in_height,in_width = in_shape
 
 
         #定义attrs
@@ -20,14 +20,12 @@ class DualAdd(Dual):
         input1 = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
         input2 = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
         output = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        output_grad =  MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
+        grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
 
         forward_add_tensors = ForwardAddTensors(input1=input1,
                                                 input2=input2,
                                                 output=output)
-        backward_add_tensors = BackwardAddTensors(output_grad=output_grad,
-                                                input_grad1=output_grad,
-                                                input_grad2=output_grad)
+        backward_add_tensors = BackwardAddTensors(grad=grad)
         
         #定义op
         self.forward = ForwardAdd(attrs=forward_add_attrs,

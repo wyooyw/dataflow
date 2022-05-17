@@ -1,0 +1,84 @@
+#公共部分
+- name: net_type
+  long: 1
+  terms:
+    "0": alexnet
+    "1": resnet
+- name: stage
+  long: 2
+  terms:
+    "00": forward
+    "01": backward
+    "10": WG
+    "11": WU
+- name: op_type
+  long: 1
+  terms:
+    "0": conv
+    "1": fcn
+- name: stride
+  long: 1
+  terms:
+    "0": 1
+    "1": 2
+- name: padding
+  long: 2
+  terms:
+    "00": outside
+    "01": inner
+    "10": False
+- name: kernel_size
+  long: 2
+  terms:
+    "00": 1
+    "01": 3
+    "10": 16
+- name: relu
+  long: 1
+  terms:
+    "0": False
+    "1": True
+- name: add
+  long: 1
+  terms:
+    "0": False
+    "1": True
+- name: bn
+  long: 2
+  terms:
+    "00": False
+    "01": True
+    "10": two
+- name: maxpool
+  long: 1
+  terms:
+    "0": False
+    "1": True
+- name: part_sum
+  long: 1
+  terms:
+    "0": False
+    "1": True
+- name: softmax
+  long: 1
+  terms:
+    "0": False
+    "1": True
+# - name: test
+#   long: 1
+#   terms:
+#     "0": False
+#     "1": True
+#   condition: "self.data['stage']=='00'"
+#特殊部分
+- ref: "backends/sparse_train/target_code/structure_info_forward.yaml"
+  condition: "self.data['stage']=='00'"
+
+- ref: "backends/sparse_train/target_code/structure_info_backward.yaml"
+  condition: "self.data['stage']=='01'"
+
+# - ref: "structure_info_wg"
+#   condition: "self.data['stage']=='10'"
+
+# - ref: "structure_info_wu"
+#   condition: "self.data['stage']=='11'"

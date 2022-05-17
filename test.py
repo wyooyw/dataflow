@@ -7,14 +7,17 @@ from compiler.generate.op.conv import DualConv,ForwardConv
 from compiler.generate.op.relu import DualRelu,ForwardRelu
 from compiler.generate.op.add import ForwardAdd
 # from compiler.generate.op.split import SplitDualGenerator
-from backends.sparse_train.op.conv_relu import ForwardConvRelu
 import torch.nn as nn
+from model.resnet import resnet18_cifar
+from model.lenet import *
 
 # from compiler.generate.op.aggregate import AggregateDualGenerator
 from compiler.utils.unique_class_name import unique_class_name
 from compiler.graph.replace_tool import Finder,ReplaceTool
 from compiler.config import Config,CodeGen
 from converter import Converter
+
+from compiler.target_gen.memory.storage import StorageType
 def testMemoryManager():
     mem = MemoryManager()
     mem.calcBases()
@@ -98,46 +101,135 @@ def testTensor():
 class MyNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.relu0 = nn.ReLU()
         self.conv1 = nn.Conv2d(3,4,5)
         self.relu1 = nn.ReLU()
-        self.conv2 = nn.Conv2d(4,5,5)
+        self.conv2 = nn.Conv2d(3,4,5)
         self.relu2 = nn.ReLU()
+        self.maxpool1 = nn.MaxPool2d(kernel_size=2,stride=2)
+        self.maxpool2 = nn.MaxPool2d(kernel_size=2,stride=2)
+        self.bn1 = nn.BatchNorm2d(num_features=4)
+        self.bn2 = nn.BatchNorm2d(num_features=4)
         self.flatten = nn.Flatten()
         # self.fc1 = nn.Linear(512,256)
         self.fc2 = nn.Linear(256,10)
     def forward(self,x):
-        x = self.relu0(x)
-        x = self.conv1(x)
-        x = self.relu1(x)
-        y = self.conv2(x)
-        y = self.relu2(y)
-        y = y + x
-        y = self.flatten(y)
+        y = self.conv1(x)
+        y = self.relu1(y)
+        y = self.maxpool1(y)
+        y = self.bn1(y)
+        z = self.conv2(x)
+        z = self.relu2(z)
+        z = self.maxpool2(z)
+        z = self.bn2(z)
+        o = y + z
+        o = self.flatten(o)
         # y = self.fc1(y)
-        y = self.fc2(y)
-        return y
+        o = self.fc2(o)
+        return o
         
 def testConverter():
 
-    net = MyNet()
+    net = resnet18_cifar()
     converter = Converter(net,in_shape=[32,3,32,32])
     converter.convert()
     print(converter.net)
+    # named_modules = dict(converter.trace.named_modules())
+    # node_op = set()
+    # module_target = set()
+    # function_target = set()
+    # conv_num = 0
+    # for node in converter.trace.graph.nodes:
+    #     node_op.add(node.op)
+    #     if node.op=="call_module":
+    #         target_type = str(type(named_modules.get(node.target,"missing")))
+    #         module_target.add(target_type)
+    #         if target_type=="<class 'torch.nn.modules.conv.Conv2d'>":
+    #             conv_num+=1
+    #     elif node.op=="call_function":
+    #         function_target.add(str(node.target))
+    # print("node_op",node_op)
+    # print("module_target",module_target)
+    # print("function_target",function_target)
+    # print("conv_num",conv_num)
 
 def testMerger():
-    net = MyNet()
-    converter = Converter(net,in_shape=[32,3,32,32])
+    net = resnet18_cifar()
+    converter = Converter(net,in_shape=[4,3,32,32])
     converter.convert()
     net = converter.net
-
     replace_tool = ReplaceTool(net=net,config_path="./backends/sparse_train/replace.yaml")
     replace_tool.replace_all()
     print(net)
+    # print("tensor num:",MemoryManager().get_tensor_num())
+    # size = MemoryManager().get_tensor_size()
+    # print("tensor size:",size," item")
+    # print("tensor size(all fp16):",size*2/1024/1024," MB")
+    # print("tensor size(all fp32):",size*4/1024/1024," MB")
+    # print("tensor size max:",MemoryManager().get_tensor_max()," items")
+
+def testMemoryManage():
+    # net = TestNet5()
+    net = resnet18_cifar()
+
+    # x = torch.ones(1,3,32,32)
+    # out = net(x)
+    
+    total_params = sum(p.numel() for p in net.parameters())
+    
+    converter = Converter(net,in_shape=[16,3,32,32])
+    converter.convert()
+    net = converter.net
+    replace_tool = ReplaceTool(net=net,config_path="./backends/sparse_train/replace.yaml")
+    replace_tool.replace_all()
+    print("======================== Net =========================")
+    print(net)
+    print("\n======================== Memory =========================")
+    storage_record = {
+        StorageType.ACTIVATION:[],
+        StorageType.GRAD:[],
+        StorageType.WEIGHT:[]
+    }
+    storage_stats = {
+        StorageType.ACTIVATION:0,
+        StorageType.GRAD:0,
+        StorageType.WEIGHT:0
+    }
+    storage_visit = {}
+    for op in net.topo():
+        print(f"{op.name}:")
+        for key,tensor in op.get_tensors().tensors.items():
+            if tensor:
+                storage = tensor.storage
+                if storage not in storage_visit:
+                    storage_visit[storage] = f"{op.name}.{key}"
+                    print(f"  [{storage.type}] {key} shape={tensor.shape} size={storage.size}")
+
+                    storage_record[storage.type].append(storage)
+                    storage_stats[storage.type] += storage.size
+                else:
+                    print(f"  [{storage.type}] {key} (share storage with {storage_visit[storage]})")
+            else:
+                print(f"  [None] {key}")
+    for key,stats in storage_stats.items():
+        b = stats*2
+        kb = b/1024
+        mb = kb/1024
+        b = int(b*100)/100
+        kb = int(kb*100)/100
+        mb = int(mb*100)/100
+        print(f"{key}:{stats} num, {b}B = {kb}KB = {mb}MB")
+    
+    print(f'Pytorch say: {total_params} total parameters.')
+    
 if __name__=="__main__":
     # testPointer()
     # testDualGenerator()
     # testMemoryManager()
     # testConfig()
     # testTensor()
-    testMerger()
+    # testMerger()
+    testMemoryManage()
+    # net = Net()
+    # converter = Converter(net,in_shape=[4,3,32,32])
+    # print(converter.trace.graph)
+    # print(Config().load("backends/sparse_train/replace.yaml"))

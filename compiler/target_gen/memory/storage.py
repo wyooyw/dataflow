@@ -1,18 +1,29 @@
 from enum import Enum
 from compiler.utils import unique_class_name
-class StorageType(Enum):
-    WEIGHT=0
-    ACTIVATION=1
-    GRAD=2
+# class StorageType(Enum):
+#     WEIGHT=0
+#     ACTIVATION=1
+#     GRAD=2
+class StorageType:
+    WEIGHT="WEIGHT"
+    ACTIVATION="ACTIVATION"
+    GRAD="GRAD"
 
 class Storage:
     # def __init__(self,type:StorageType,addr:int,size:int,content:list):
     #     self.type = type
-    def __init__(self,size:int,content:list,addr:int=-1):
+    def __init__(self,size:int,content:list,type:StorageType,addr:int=-1):
         self.addr = addr
         self.size = size
+        self.type = type
         self.content = content
         self.name = unique_class_name(self)
+        self.ref_tensors = set()
+
+    def same_as(self,storage):
+        for tensor in self.ref_tensors:
+            tensor.storage = storage
+            storage.ref_tensors.add(tensor)
     
     def __str__(self):
         return f"[Storage] name={self.name}"

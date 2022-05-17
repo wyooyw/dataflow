@@ -1,14 +1,50 @@
+#Forward
+- pattern:
+  - ForwardConv
+  - ForwardBatchnorm
+  - ForwardAdd
+  - ForwardRelu
+  - ForwardMaxpool
+  replace: ForwardConvBnAddReluMaxpool
+- pattern:
+  - ForwardConv
+  - ForwardBatchnorm
+  - ForwardAdd
+  - ForwardRelu
+  replace: ForwardConvBnAddRelu
+- pattern:
+  - ForwardConv
+  - ForwardBatchnorm
+  - ForwardRelu
+  replace: ForwardConvBnRelu
+- pattern:
+  - ForwardConv
+  - ForwardBatchnorm
+  replace: ForwardConvBn
+#Backward
+- pattern:
+  - BackwardConv
+  - BackwardRelu
+  - BackwardBatchnorm
+  replace: BackwardConvReluBn
+- pattern:
+  - BackwardConv
+  - BackwardSplit
+  - BackwardRelu
+  - DoubleBn
+  replace: BackwardConvSplitReluBnBn
+- pattern:
+  - BackwardConv
+  - BackwardSplit
+  - BackwardRelu
+  - BackwardBatchnorm
+  replace: BackwardConvSplitReluBn
+- pattern:
+  - BackwardConv
+  replace: BackwardSTConv
+
 # - pattern:
 #   - ForwardConv
 #   - ForwardRelu
-#   - ForwardAdd
-#   replace: ForwardConvReluAdd
-- pattern:
-  - ForwardConv
-  - ForwardRelu
-  - ForwardAdd
-  replace: ForwardConvReluAdd
-- pattern:
-  - ForwardConv
-  - ForwardRelu
-  replace: ForwardConvRelu
+#   - DoubleBn
+#   replace: ForwardConvReluBnBn

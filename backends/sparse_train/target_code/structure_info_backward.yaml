@@ -1,0 +1,18 @@
+- name: output_grad
+  long: 9
+- name: weight
+  long: 9
+- name: input_grad
+  long: 9
+- name: relu_mask
+  long: 9
+  condition: "self.data['relu']=='1'"
+- name: pool_mask
+  long: 9
+  condition: "self.data['maxpool']=='1'"
+- name: bn_use
+  long: 9
+  condition: "self.data['bn']=='01' or self.data['bn']=='10'"
+- name: bn_use2
+  long: 9
+  condition: "self.data['bn']=='10'"

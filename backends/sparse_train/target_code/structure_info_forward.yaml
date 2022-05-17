@@ -1,0 +1,15 @@
+- name: in_feature
+  long: 9
+- name: weight
+  long: 9
+- name: relu_mask
+  long: 9
+  condition: "self.data['relu']=='1'"
+- name: pool_mask
+  long: 9
+  condition: "self.data['maxpool']=='1'"
+- name: bn_use
+  long: 9
+  condition: "self.data['bn']=='01'"
+- name: output
+  long: 9

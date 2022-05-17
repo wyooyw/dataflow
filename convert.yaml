@@ -7,6 +7,10 @@ call_module:
   new: DualFlatten
 - old: nn.Linear
   new: DualLinear
+- old: nn.MaxPool2d
+  new: DualMaxpool
+- old: nn.BatchNorm2d
+  new: DualBatchnorm
 
 call_function: 
 - old: operator.add

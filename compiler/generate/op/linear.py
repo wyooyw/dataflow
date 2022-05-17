@@ -21,12 +21,12 @@ class DualLinear(Dual):
 
         out_shape = ForwardLinear.get_out_shape_by_in_shape(in_shape,forward_linear_attrs)
         #定义张量
-        weight = MemoryManager().allocWeight(shape=(in_features,out_features))
-        weight_grad = MemoryManager().allocGrad(shape=(in_features,out_features))
+        weight =MemoryManager().allocWeight(shape=(in_features,out_features))
+        weight_grad =MemoryManager().allocGrad(shape=(in_features,out_features))
         input = MemoryManager().allocActivation(shape=(in_batch,in_features))
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_features))
-        output = MemoryManager().allocActivation(shape=(in_batch,out_features))
-        output_grad = MemoryManager().allocGrad(shape=(in_batch,out_features))
+        input_grad =MemoryManager().allocGrad(shape=(in_batch,in_features))
+        output =MemoryManager().allocActivation(shape=(in_batch,out_features))
+        output_grad =MemoryManager().allocGrad(shape=(in_batch,out_features))
 
         forward_linear_tensors = ForwardLinearTensors(weight=weight,
                                                     input=input,

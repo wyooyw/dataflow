@@ -9,6 +9,8 @@ class Tensor:
                         offset=None,
                         stride:tuple[int]=None):
         self.addr = addr
+        
+        storage.ref_tensors.add(self)
         self.storage = storage
 
         self.shape = shape

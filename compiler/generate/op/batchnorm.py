@@ -1,50 +1,54 @@
 from compiler.generate.dual import Dual
 from compiler.generate.operator import Operator,OperatorType
-from compiler.generate.op.attrs.relu_attrs import *
-from compiler.generate.op.tensors.relu_tensors import *
+from compiler.generate.op.attrs.batchnorm_attrs import *
+from compiler.generate.op.tensors.batchnorm_tensors import *
 from compiler.target_gen.memory.memory_manager import MemoryManager
 from compiler.utils.pointer import Pointer
 from compiler.utils.unique_class_name import unique_class_name
 import torch.nn as nn
 
-class DualRelu(Dual):
+class DualBatchnorm(Dual):
     def __init__(self,in_shape):
         in_batch,in_channels,in_height,in_width = in_shape
         #定义张量
-        mask = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        input = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width)) #由上一个算子申请？
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
-        output = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        output_grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
+        input = MemoryManager().allocActivation(shape=in_shape)
+        input_grad = MemoryManager().allocGrad(shape=in_shape)
+        output = MemoryManager().allocActivation(shape=in_shape)
+        output_grad = MemoryManager().allocGrad(shape=in_shape)
+
+        avg = MemoryManager().allocActivation(shape=(in_channels,))
+        std = MemoryManager().allocActivation(shape=(in_channels,))
         
-        forward_relu_tensors = ForwardReluTensors(mask=mask,
+        forward_tensors = ForwardBatchnormTensors(avg=avg,
+                                                std=std,
                                                 input=input,
                                                 output=output)
-        backward_relu_tensors = BackwardReluTensors(mask=mask,
+        backward_tensors = BackwardBatchnormTensors(avg=avg,
+                                                std=std,
                                                 input_grad=input_grad,
                                                 output_grad=output_grad)
 
-        forward_relu_attrs = ForwardReluAttrs()
-        backward_relu_attrs = BackwardReluAttrs()
+        forward_attrs = ForwardBatchnormAttrs(num_features=in_channels)
+        backward_attrs = BackwardBatchnormAttrs(num_features=in_channels)
         #定义op
-        self.forward = ForwardRelu(attrs=forward_relu_attrs,
-                                        tensors=forward_relu_tensors,
+        self.forward = ForwardBatchnorm(attrs=forward_attrs,
+                                        tensors=forward_tensors,
                                         in_shape=in_shape,
                                         out_shape=in_shape)
-        self.backward = BackwardRelu(attrs=backward_relu_attrs,
-                                        tensors=backward_relu_tensors,
+        self.backward = BackwardBatchnorm(attrs=backward_attrs,
+                                        tensors=backward_tensors,
                                         in_shape=in_shape,
                                         out_shape=in_shape)
     
     @classmethod
     def from_torch_module(cls,in_shape,module):
-        dual = DualRelu(in_shape=in_shape)
+        dual = DualBatchnorm(in_shape=in_shape)
         return dual
 
 
-class ForwardRelu(Operator):
-    def __init__(self,attrs:ForwardReluAttrs,tensors:ForwardReluTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.FORWARD_RELU,
+class ForwardBatchnorm(Operator):
+    def __init__(self,attrs:ForwardBatchnormAttrs,tensors:ForwardBatchnormTensors,in_shape=[],out_shape=[]):
+        super().__init__(type=OperatorType.FORWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),
@@ -60,9 +64,9 @@ class ForwardRelu(Operator):
         return in_shape
         
 
-class BackwardRelu(Operator):
-    def __init__(self,attrs:BackwardReluAttrs,tensors:BackwardReluTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.BACKWARD_RELU,
+class BackwardBatchnorm(Operator):
+    def __init__(self,attrs:BackwardBatchnormAttrs,tensors:BackwardBatchnormTensors,in_shape=[],out_shape=[]):
+        super().__init__(type=OperatorType.BACKWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),

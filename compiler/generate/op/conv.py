@@ -17,7 +17,7 @@ class DualConv(Dual):
         # in_batch,
         # in_width,
         # in_height,
-        in_batch,in_width,in_height,in_channels = in_shape
+        in_batch,in_channels,in_width,in_height = in_shape
 
         forward_conv_attrs = ForwardConvAttrs(in_channels=in_channels,
                                         out_channels=out_channels,
@@ -33,11 +33,11 @@ class DualConv(Dual):
         weight = MemoryManager().allocWeight(shape=(out_channels,in_channels,kernel_size,kernel_size))
         weight_grad = MemoryManager().allocGrad(shape=(out_channels,in_channels,kernel_size,kernel_size))
         input = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        input_grad = None
-        output = None
+        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
         #TODO output_size把stride考虑进来，调用ForwardConv的get_out_shape_by_in_shape
         out_shape = ForwardConv.get_out_shape_by_in_shape(in_shape,forward_conv_attrs)
         output_grad = MemoryManager().allocGrad(shape=out_shape)
+        output = MemoryManager().allocActivation(shape=out_shape)
 
         forward_conv_tensors = ForwardConvTensors(weight=weight,
                                                     input=input,
@@ -64,6 +64,7 @@ class DualConv(Dual):
                         in_channels=module.in_channels,
                         out_channels=module.out_channels,
                         kernel_size=module.kernel_size[0],
+                        stride=module.stride[0],
                         padding=module.padding[0])
         return dual
 

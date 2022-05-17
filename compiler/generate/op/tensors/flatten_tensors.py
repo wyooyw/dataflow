@@ -4,13 +4,13 @@ class ForwardFlattenTensors(OpTensors):
         super().__init__()
         self.tensors["input"] = input
         self.tensors["output"] = output
-        self.input = ["input"]
-        self.output = ["output"]
+        self.input = input
+        self.output = output
 
 class BackwardFlattenTensors(OpTensors):
     def __init__(self,input_grad,output_grad):
         super().__init__()
         self.tensors["output_grad"] = output_grad
         self.tensors["input_grad"] = input_grad
-        self.input = ["output_grad"]
-        self.output = ["input_grad"]
+        self.input = output_grad
+        self.output = input_grad

@@ -20,14 +20,27 @@ class MemoryManager(object):
             SegmentType.OPERATOR:Segment(type=SegmentType.OPERATOR),
             SegmentType.NET:Segment(type=SegmentType.NET)
         }
+        self.alloc_num = 0
         pass
+
+    def get_tensor_num(self):
+        return len(self.tensor_list)
+    
+    def get_tensor_size(self):
+        size = reduce(lambda x,y:x+y,[reduce(lambda x,y:x*y, tensor.shape) for tensor in self.tensor_list])
+        return size
+
+    def get_tensor_max(self):
+        sizes = [reduce(lambda x,y:x*y, tensor.shape) for tensor in self.tensor_list]
+        return max(sizes)
     
     def allocTensor(self,
                     shape,
                     storage_segment:Segment,
+                    type,
                     content=None):
         size = reduce(lambda x, y: x*y, shape)
-        storage = Storage(size=size,content=content)
+        storage = Storage(size=size,content=content,type=type)
         tensor = Tensor(storage=storage,shape=shape)
         self.tensor_list.append(tensor)
         storage_segment.size += size
@@ -39,15 +52,15 @@ class MemoryManager(object):
 
     def allocWeight(self,shape,content=None):
         segment = self.segments[SegmentType.WEIGHT_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,content=content)
+        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.WEIGHT,content=content)
     
     def allocActivation(self,shape,content=None):
         segment = self.segments[SegmentType.ACTIVATION_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,content=content)
+        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.ACTIVATION,content=content)
     
     def allocGrad(self,shape,content=None):
         segment = self.segments[SegmentType.GRAD_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,content=content)
+        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.GRAD,content=content)
     
     def calcBases(self):
         self.segments[SegmentType.WEIGHT_STORAGE].base = 0
