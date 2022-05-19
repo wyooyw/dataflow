@@ -2,7 +2,8 @@ import yaml
 import collections
 from bitarray import bitarray
 class Instruction(object):
-    def __init__(self,config_path="backends/sparse_train/target_code/structure_info.yaml",init_data={},pad_to=None):
+    def __init__(self,name="",config_path="backends/sparse_train/target_code/structure_info.yaml",init_data={},pad_to=None):
+        self.name = name
         self.config = collections.OrderedDict()
         self.alias_to_value = {}
         self.value_to_alias = {}
@@ -58,8 +59,9 @@ class Instruction(object):
         return bits
 
     def __str__(self):
-        strs = []
-        strs.append("{} Instruction {}".format("="*33,"="*33))
+        strs = ["\n"]
+        title = f"Structure info of {self.name}"
+        strs.append("{} {} {}".format("="*((80-len(title))//2),title,"="*((80-len(title))//2)))
         strs.append("{}{}{}{}".format("name".ljust(20),
                                         "long".ljust(20),
                                         "value".ljust(20),
@@ -76,6 +78,7 @@ class Instruction(object):
         bits = self.export()
         strs.append("{}{}".format("length:".ljust(20),total_length))
         strs.append("{}{}".format("length after pad:".ljust(20),self.pad_to))
+        strs.append(self.export().to01())
         strs.append("="*80)
         return "\n".join(strs)
 

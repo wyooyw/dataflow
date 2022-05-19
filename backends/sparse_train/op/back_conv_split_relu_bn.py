@@ -26,8 +26,7 @@ class BackwardConvSplitReluBn(Operator):
         self.tensors.set("add",add_tensor)
         self.tensors.set("relu.mask",self.relu.tensors.get("mask"))
 
-        self.tensors.set("bn.avg",self.bn.tensors.get("avg"))
-        self.tensors.set("bn.std",self.bn.tensors.get("std"))
+        self.tensors.set("bn.bn_use",self.bn.tensors.get("bn_use"))
         self.tensors.set("input_grad",self.bn.tensors.get("input_grad"))
 
     @classmethod

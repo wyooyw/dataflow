@@ -11,5 +11,8 @@
 - name: bn_use
   long: 9
   condition: "self.data['bn']=='01'"
+- name: res_add
+  long: 9
+  condition: "self.data['add']=='1'"
 - name: output
   long: 9

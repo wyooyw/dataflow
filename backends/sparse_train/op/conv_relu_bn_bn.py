@@ -19,10 +19,8 @@ class ForwardConvReluBnBn(Operator):
         self.tensors.set("input",self.conv.tensors.get("input"))
         self.tensors.set("conv.weight",self.conv.tensors.get("weight"))
         self.tensors.set("relu.mask",self.relu.tensors.get("mask"))
-        self.tensors.set("bn1.avg",self.bn1.tensors.get("avg"))
-        self.tensors.set("bn1.std",self.bn1.tensors.get("std"))
-        self.tensors.set("bn2.avg",self.bn2.tensors.get("avg"))
-        self.tensors.set("bn2.std",self.bn2.tensors.get("std"))
+        self.tensors.set("bn1.bn_use",self.bn1.tensors.get("bn_use"))
+        self.tensors.set("bn2.bn_use",self.bn2.tensors.get("bn_use"))
         self.tensors.set("output1",self.bn1.tensors.get("output"))
         self.tensors.set("output2",self.bn2.tensors.get("output"))
         

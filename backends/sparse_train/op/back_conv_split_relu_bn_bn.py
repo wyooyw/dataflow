@@ -27,12 +27,10 @@ class BackwardConvSplitReluBnBn(Operator):
         self.tensors.set("add",add_tensor)
         self.tensors.set("relu.mask",self.relu.tensors.get("mask"))
 
-        self.tensors.set("bn1.avg",self.bn1.tensors.get("avg"))
-        self.tensors.set("bn1.std",self.bn1.tensors.get("std"))
+        self.tensors.set("bn1.bn_use",self.bn1.tensors.get("bn_use"))
         self.tensors.set("input_grad1",self.bn1.tensors.get("input_grad"))
 
-        self.tensors.set("bn2.avg",self.bn2.tensors.get("avg"))
-        self.tensors.set("bn2.std",self.bn2.tensors.get("std"))
+        self.tensors.set("bn2.bn_use",self.bn2.tensors.get("bn_use"))
         self.tensors.set("input_grad2",self.bn2.tensors.get("input_grad"))
 
     @classmethod

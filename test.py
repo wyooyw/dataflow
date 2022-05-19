@@ -1,3 +1,7 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
+
 from compiler.target_gen.memory.memory_manager import MemoryManager
 from compiler.target_gen.memory.segment import Segment,SegmentType
 from compiler.target_gen.memory.tensor import Tensor
@@ -6,6 +10,7 @@ from compiler.generate.net.net import Net
 from compiler.generate.op.conv import DualConv,ForwardConv
 from compiler.generate.op.relu import DualRelu,ForwardRelu
 from compiler.generate.op.add import ForwardAdd
+from compiler.generate.op.batchnorm import ForwardBatchnorm,BackwardBatchnorm
 # from compiler.generate.op.split import SplitDualGenerator
 import torch.nn as nn
 from model.resnet import resnet18_cifar
@@ -18,6 +23,8 @@ from compiler.config import Config,CodeGen
 from converter import Converter
 
 from compiler.target_gen.memory.storage import StorageType
+
+from backends.sparse_train.target_code.instruction_gen import InstructionGenerator
 def testMemoryManager():
     mem = MemoryManager()
     mem.calcBases()
@@ -176,9 +183,28 @@ def testMemoryManage():
     
     total_params = sum(p.numel() for p in net.parameters())
     
-    converter = Converter(net,in_shape=[16,3,32,32])
+    converter = Converter(net,in_shape=[4,3,32,32])
     converter.convert()
     net = converter.net
+
+    
+    #将BN算子的avg,std,alpha,beta合并成一个tensor
+    #编译器里不好实现，这里hack一下
+    tmp = {}
+    for op in net.topo():
+        if type(op)==ForwardBatchnorm or type(op)==BackwardBatchnorm:
+            avg_storage = op.tensors.get("avg").storage
+            if avg_storage in tmp:
+                bn_use = tmp[avg_storage]
+            else:
+                bn_use = MemoryManager().allocWeight((4,op.tensors.get("avg").shape[0]))
+                tmp[avg_storage] = bn_use
+            op.tensors.set("bn_use",bn_use)
+            op.tensors.tensors.pop("avg")
+            op.tensors.tensors.pop("std")
+            op.tensors.tensors.pop("alpha")
+            op.tensors.tensors.pop("beta")
+
     replace_tool = ReplaceTool(net=net,config_path="./backends/sparse_train/replace.yaml")
     replace_tool.replace_all()
     print("======================== Net =========================")
@@ -210,7 +236,9 @@ def testMemoryManage():
                     print(f"  [{storage.type}] {key} (share storage with {storage_visit[storage]})")
             else:
                 print(f"  [None] {key}")
+    total = 0
     for key,stats in storage_stats.items():
+        total += stats
         b = stats*2
         kb = b/1024
         mb = kb/1024
@@ -218,8 +246,21 @@ def testMemoryManage():
         kb = int(kb*100)/100
         mb = int(mb*100)/100
         print(f"{key}:{stats} num, {b}B = {kb}KB = {mb}MB")
-    
-    print(f'Pytorch say: {total_params} total parameters.')
+    print("total num:",total)
+
+    # print(net.count())
+    net.reduce_tensor()
+    print(net.count())
+    net.set_tensor_index()
+
+    # for op,tensor_name,tensor in net.all_tensors():
+    #     print(op.name,tensor_name,tensor.index)
+
+    # instr_gen = InstructionGenerator(net)
+    # for instr in instr_gen.instruction_list:
+    #     print(instr)
+    # print(f'Pytorch say: {total_params} total parameters.')
+    MemoryManager().tensor_memory_layout2(net)
     
 if __name__=="__main__":
     # testPointer()

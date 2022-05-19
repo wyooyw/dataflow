@@ -181,3 +181,4 @@ class Operator:
         """获取张量所属的所有tensor
         """
         return self.tensors
+    

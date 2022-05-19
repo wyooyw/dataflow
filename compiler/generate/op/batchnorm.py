@@ -18,13 +18,19 @@ class DualBatchnorm(Dual):
 
         avg = MemoryManager().allocActivation(shape=(in_channels,))
         std = MemoryManager().allocActivation(shape=(in_channels,))
+        alpha = MemoryManager().allocWeight(shape=(in_channels,))
+        beta = MemoryManager().allocWeight(shape=(in_channels,))
         
         forward_tensors = ForwardBatchnormTensors(avg=avg,
                                                 std=std,
+                                                alpha=alpha,
+                                                beta=beta,
                                                 input=input,
                                                 output=output)
         backward_tensors = BackwardBatchnormTensors(avg=avg,
                                                 std=std,
+                                                alpha=alpha,
+                                                beta=beta,
                                                 input_grad=input_grad,
                                                 output_grad=output_grad)
 

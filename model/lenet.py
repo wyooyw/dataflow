@@ -120,13 +120,13 @@ class TestNet5(nn.Module):
         super().__init__()
         # self.relu0 = nn.ReLU()
         self.conv1 = nn.Conv2d(3,3,3,stride=1,bias=False)
-        self.bn1 = nn.BatchNorm2d(3,affine=False)
+        self.bn1 = nn.BatchNorm2d(3,affine=True)
         self.relu1 = nn.ReLU()
-        self.conv2 = nn.Conv2d(3,3,3,stride=2,bias=False)
-        self.bn2 = nn.BatchNorm2d(3,affine=False)
+        self.conv2 = nn.Conv2d(3,3,3,stride=1,bias=False)
+        self.bn2 = nn.BatchNorm2d(3,affine=True)
         self.relu2 = nn.ReLU()
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(588,10,bias=False)
+        # self.linear = nn.Linear(588,10,bias=False)
         pass
     def forward(self,x):
         # x = self.relu0(x)
@@ -134,11 +134,11 @@ class TestNet5(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu1(x)
-        identity = x
+        # identity = x
         x = self.conv2(x)
         x = self.bn2(x)
-        x = x + identity
+        # x = x + identity
         x = self.relu2(x)
         x = self.flatten(x)
-        x = self.linear(x)
+        # x = self.linear(x)
         return x

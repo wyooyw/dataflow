@@ -22,8 +22,7 @@ class BackwardConvReluBn(Operator):
 
         self.tensors.set("relu.mask",relu.tensors.get("mask"))
 
-        self.tensors.set("bn.avg",bn.tensors.get("avg"))
-        self.tensors.set("bn.std",bn.tensors.get("std"))
+        self.tensors.set("bn.bn_use",bn.tensors.get("bn_use"))
         self.tensors.set("input_grad",bn.tensors.get("input_grad"))
 
     @classmethod

@@ -1,7 +1,12 @@
 from bitarray import bitarray
-class InstructionList(object):
-    def __init__(self):
+class InstructionGenerator(object):
+    def __init__(self,net):
+        self.net = net
         self.instruction_list = []
+        for op in net.topo():
+            if hasattr(op,"to_instr"):
+                self.add(op.to_instr())
+        
     
     def add(self,instruction):
         self.instruction_list.append(instruction)

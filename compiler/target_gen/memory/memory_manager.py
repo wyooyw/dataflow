@@ -1,4 +1,5 @@
 from compiler.utils.singleton import singleton
+from compiler.utils.rectangle import Rectangle,RectangleManager
 from compiler.target_gen.memory.net import Net
 from compiler.target_gen.memory.mem_operator import MemOperator
 from compiler.target_gen.memory.storage import Storage,StorageType
@@ -6,6 +7,7 @@ from compiler.target_gen.memory.tensor import Tensor
 from compiler.target_gen.memory.segment import Segment,SegmentType
 
 from functools import reduce
+import collections
 
 @singleton
 class MemoryManager(object):
@@ -75,4 +77,92 @@ class MemoryManager(object):
         self.segments[SegmentType.NET].base = self.segments[SegmentType.OPERATOR].base + \
                                                                 self.segments[SegmentType.OPERATOR].size
     
+    def memory_layout(self,net):
+        """内存布局规划
+        """
+        pass
+    
+    def tensor_memory_layout(self,net):
+        """张量内存布局规划
+        这里得到的内存地址是偏移量,真实地址需要加上tensor_base_addr得到
+        """
+        collect = collections.OrderedDict()
+        visit = set()
+        for op,tensor_name,tensor in net.all_tensors():
+            storage = tensor.storage
+            storage_type = storage.type
+            if storage_type not in collect:
+                collect[storage_type] = []
+            if storage not in visit:
+                collect[storage_type].append(storage)
+                visit.add(storage)
+        addr = 0
+        bases = collections.OrderedDict()
+        for storage_type,storage_list in collect.items():
+            print(f"base of {storage_type} is {addr}B = {int(addr/1024*100)/100}KB")
+            for storage in storage_list:
+                storage.addr = addr
+                addr += storage.size*2 #乘2是因为fp16
+        
+        print(f"end at {addr}B = {int(addr/1024*100)/100}KB")
+    
+    def tensor_memory_layout2(self,net):
+        """利用求解二维装箱问题来进行内存布局
+        """
+
+        #为每个张量设定生命周期
+        self._mark_life_time(net)
+
+        rec_manager = RectangleManager()
+        visit_tensor = set()
+        for op,tensor_name,tensor in net.all_tensors():
+            if tensor in visit_tensor:
+                continue
+            if tensor.storage.type==StorageType.WEIGHT:
+                continue
+
+            rec = self._make_rectangle(tensor)
+            visit_tensor.add(tensor)
+            if tensor.storage.type==StorageType.ACTIVATION:
+                rec_manager.add_rectangle_fix(rec)
+            else:
+                rec_manager.add_rectangle(rec)
+            
+        
+        memory_max = rec_manager.layout()
+        print("memory_max:",memory_max)
+        rec_manager.paint()
+        rec_manager.save()
+
+    def _mark_life_time(self,net):
+        """为每个张量设定生命周期
+        """
+        visit_op = set()
+        visit_tensor = set()
+        time = -1
+        for op,tensor_name,tensor in net.all_tensors():
+            if op not in visit_op:
+                visit_op.add(op)
+                time += 1
+            if tensor not in visit_tensor:
+                visit_tensor.add(tensor)
+                tensor.life_begin = time
+                tensor.life_end = time+1
+            else:
+                tensor.life_end = time+1
+    
+    def _make_rectangle(self,tensor):
+        """由tensor构建矩形
+        长为tensor生命周期
+        高为tensor内存占用大小
+        """
+        x_range = (tensor.life_begin,tensor.life_end)
+        height = tensor.storage.size
+        if tensor.storage.type==StorageType.ACTIVATION:
+            color = "blue"
+        elif tensor.storage.type==StorageType.GRAD:
+            color = "red"
+        else:
+            assert False
+        return Rectangle(x_range,height,color,tensor)
     
