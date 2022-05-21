@@ -22,11 +22,11 @@ class DualMaxpool(Dual):
                                                 stride=stride)
         #定义张量
         input = MemoryManager().allocActivation(shape=in_shape)
-        input_grad = MemoryManager().allocGrad(shape=in_shape)
+        input_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
         mask = MemoryManager().allocActivation(shape=in_shape)
         out_shape = ForwardMaxpool.get_out_shape_by_in_shape(in_shape,forward_attrs)
         output = MemoryManager().allocActivation(shape=out_shape)
-        output_grad = MemoryManager().allocGrad(shape=out_shape)
+        output_grad = MemoryManager().allocFeatureGrad(shape=out_shape)
         
 
         forward_tensors = ForwardMaxpoolTensors(input=input,

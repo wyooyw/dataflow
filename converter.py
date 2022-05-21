@@ -123,7 +123,7 @@ class Converter(object):
         """
         for op in self.net.topo():
             if type(op)==BackwardAdd:
-                print(f"[Conventer] Remove no-use node: {op.name}")
+                # print(f"[Conventer] Remove no-use node: {op.name}")
                 predecessor_set = [*op.predecessor]
                 successor_set = [*op.successor]
                 for predecessor in predecessor_set:
@@ -134,7 +134,7 @@ class Converter(object):
                     successor.disconnect_predecessor(op)
                     successor.connect_predecessor(*predecessor_set)
             elif type(op)==ForwardSplit:
-                print(f"[Conventer] Remove no-use node: {op.name}")
+                # print(f"[Conventer] Remove no-use node: {op.name}")
                 predecessor_set = [*op.predecessor]
                 successor_set = [*op.successor]
                 for predecessor in predecessor_set:

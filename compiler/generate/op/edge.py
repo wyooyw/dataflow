@@ -13,7 +13,7 @@ class DualEdge(Dual):
 
         output = MemoryManager().allocActivation(shape=in_shape)
 
-        output_grad = MemoryManager().allocGrad(shape=in_shape)
+        output_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
 
         forward_edge_tensors = ForwardEdgeTensors(output=output)
         backward_edge_tensors = BackwardEdgeTensors(output_grad=output_grad)

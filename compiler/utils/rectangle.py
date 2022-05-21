@@ -53,8 +53,9 @@ class RectanglePainter:
         plt.savefig(f"{path}.png",dpi=300) 
 
 class RectangleManager:
-    def __init__(self,name="resnet-reverse"):
+    def __init__(self,name="normal"):
         self.rectangle_list = []
+        self.rectangle_opt_list = []
         self.rectangle_fix_list = []
         self.x_max = 0
         self.y_max = 0
@@ -63,16 +64,18 @@ class RectangleManager:
 
     def add_rectangle(self,rectangle):
         self.rectangle_list.append(rectangle)
+        # self.rectangle_opt_list.append(rectangle)
         if rectangle.x_range[1] > self.x_max:
             self.x_max = rectangle.x_range[1]
 
     def add_rectangle_fix(self,rectangle):
-        self.rectangle_fix_list.append(rectangle)
+        self.rectangle_list.append(rectangle)
+        # self.rectangle_fix_list.append(rectangle)
         if rectangle.x_range[1] > self.x_max:
             self.x_max = rectangle.x_range[1]
 
     def layout(self):
-        self.name="resnet-margin-5"
+        self.name="resnet-random-feature-grad"
         ground = [0]*(self.x_max+1)
 
         def put_rec(rec):
@@ -83,28 +86,42 @@ class RectangleManager:
             for i in range(x_range[0],x_range[1]):
                 ground[i] = ground_new_height
             rec.y_range = [ground_max,ground_new_height]
-            self.y_max = max(self.y_max,ground_new_height)
+            return ground_new_height
+            # self.y_max = max(self.y_max,ground_new_height)
         for rec1 in self.rectangle_fix_list:
-            put_rec(rec1)
-        # self.rectangle_list.reverse()
+            new_height = put_rec(rec1)
+            self.y_max = max(self.y_max,new_height)
+        
         # random.shuffle(self.rectangle_list)
-        a = self.rectangle_list[0::5]
-        b = self.rectangle_list[1::5]
-        c = self.rectangle_list[2::5]
-        d = self.rectangle_list[3::5]
-        e = self.rectangle_list[4::5]
-        a.extend(b)
-        a.extend(c)
-        a.extend(d)
-        a.extend(e)
-        assert len(a)==len(self.rectangle_list)
-        self.rectangle_list = a
-        for rec in self.rectangle_list:
-            put_rec(rec)
+        for rec in self.rectangle_opt_list:
+            if rec.tensor.storage.type=="WEIGHT_GRAD":
+                new_height = put_rec(rec)
+                self.y_max = max(self.y_max,new_height)
+        # self.rectangle_opt_list.reverse()
 
-        self.rectangle_list.extend(self.rectangle_fix_list)
+        min_height = 9999999999
+        min_order = []
+        ground_copy = [*ground]
+        for i in range(10):
+            y_max_tmp = self.y_max
+            random.shuffle(self.rectangle_opt_list)
+            for rec in self.rectangle_opt_list:
+                if not rec.tensor.storage.type=="WEIGHT_GRAD":
+                    new_height = put_rec(rec)
+                    y_max_tmp = max(y_max_tmp,new_height)
+            print(f"min:{min_height}, got:{y_max_tmp}")
+            if y_max_tmp<min_height:
+                min_order = [*self.rectangle_opt_list]
+                min_height = y_max_tmp
+            ground = [*ground_copy]
+                
+        self.rectangle_opt_list = min_order
+        for rec in self.rectangle_opt_list:
+                if not rec.tensor.storage.type=="WEIGHT_GRAD":
+                    new_height = put_rec(rec)
+                    self.y_max = max(self.y_max,new_height)
+
         return self.y_max
-        # self.y_max = [0,max_height]
     
     def max(self,ls,range_begin,range_stop):
         m = -999
@@ -113,7 +130,7 @@ class RectangleManager:
         return m
 
     def title(self):
-        B = self.y_max*2
+        B = self.y_max
         KB = int(B/1024*100)/100
         MB = int(KB/1024*100)/100
         plt.title(f'{self.name} ({B}B={KB}KB={MB}MB)', fontsize=10)
@@ -122,16 +139,244 @@ class RectangleManager:
         for rec in self.rectangle_list:
             self.painter.paint(rec.x_range,rec.y_range,rec.color)
         self.title()
-        self.y_max += 1
-        self.x_max += 1
-        self.painter.set_lim(x_lim=(0,self.x_max), y_lim=(0,self.y_max))
+        # self.y_max += 1
+        # self.x_max += 1
+        #batch_size=1: 15915800
+        #batch_size=4: 39172000
+        #batch_size=8: 89701400
+        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,89701400)))
         self.painter.show()
     
     def save(self):
         for rec in self.rectangle_list:
             self.painter.paint(rec.x_range,rec.y_range,rec.color)
         self.title()
-        self.y_max += 1
-        self.x_max += 1
-        self.painter.set_lim(x_lim=(0,self.x_max), y_lim=(0,self.y_max))
+        # self.y_max += 1
+        # self.x_max += 1
+        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,89701400)))
         self.painter.save(self.name)
+
+def getRectangleManager():
+    # manager = RectangleManagerOrigin()
+    # manager = RectangleManagerSimpleReuse()
+    # manager = RectangleManagerWeightUpdateImm()
+    manager = RectangleManagerRandomSmall()
+    return manager
+
+class RectangleManagerOrigin(RectangleManager):
+    """最原始的内存布局方法
+    各区域分开，不复用任何内存
+    """
+    def __init__(self):
+        super().__init__(name="1.origin")
+    
+    def layout(self):
+        feature_list = []
+        weight_grad_list = []
+        feature_grad_list = []
+        for rec in self.rectangle_list:
+            if rec.tensor.storage.type=="ACTIVATION":
+                feature_list.append(rec)
+            elif rec.tensor.storage.type=="WEIGHT_GRAD":
+                weight_grad_list.append(rec)
+            elif rec.tensor.storage.type=="FEATURE_GRAD":
+                feature_grad_list.append(rec)
+
+        ground = [0]*(self.x_max+1)
+
+        def put_rec(rec):
+            x_range = rec.x_range
+            height = rec.height
+            ground_max = self.max(ground,x_range[0],x_range[1])
+            ground_new_height = ground_max+height
+            for i in range(x_range[0],x_range[1]):
+                ground[i] = ground_new_height
+            rec.y_range = [ground_max,ground_new_height]
+            return ground_new_height
+
+        #先放feature
+        for rec in feature_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+            for i in range(0,self.x_max+1):
+                ground[i] = self.y_max
+
+        #再放weight_grad
+        for rec in weight_grad_list:
+            rec.x_range = (rec.x_range[0],self.x_max) #设weight_grad的生命周期要一直到最后
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+            for i in range(0,self.x_max+1):
+                ground[i] = self.y_max
+        
+
+        #最后放feature_grad
+        for rec in feature_grad_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+            for i in range(0,self.x_max+1):
+                ground[i] = self.y_max
+
+        return self.y_max
+
+class RectangleManagerSimpleReuse(RectangleManager):
+    """简单地进行内存复用，然各区域间有融合
+    """
+    def __init__(self):
+        super().__init__(name="2.simple-reuse")
+    
+    def layout(self):
+        feature_list = []
+        weight_grad_list = []
+        feature_grad_list = []
+        for rec in self.rectangle_list:
+            if rec.tensor.storage.type=="ACTIVATION":
+                feature_list.append(rec)
+            elif rec.tensor.storage.type=="WEIGHT_GRAD":
+                weight_grad_list.append(rec)
+            elif rec.tensor.storage.type=="FEATURE_GRAD":
+                feature_grad_list.append(rec)
+
+        ground = [0]*(self.x_max+1)
+
+        def put_rec(rec):
+            x_range = rec.x_range
+            height = rec.height
+            ground_max = self.max(ground,x_range[0],x_range[1])
+            ground_new_height = ground_max+height
+            for i in range(x_range[0],x_range[1]):
+                ground[i] = ground_new_height
+            rec.y_range = [ground_max,ground_new_height]
+            return ground_new_height
+
+        #先放feature
+        for rec in feature_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+        
+        #再放weight_grad
+        for rec in weight_grad_list:
+            rec.x_range = (rec.x_range[0],self.x_max) #设weight_grad的生命周期要一直到最后
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+
+        #最后放feature_grad
+        for rec in feature_grad_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+
+        return self.y_max
+
+class RectangleManagerWeightUpdateImm(RectangleManager):
+    """参数立即更新，减小权重的生命周期
+    """
+    def __init__(self):
+        super().__init__(name="3.weight-update-imm")
+    
+    def layout(self):
+        feature_list = []
+        weight_grad_list = []
+        feature_grad_list = []
+        for rec in self.rectangle_list:
+            if rec.tensor.storage.type=="ACTIVATION":
+                feature_list.append(rec)
+            elif rec.tensor.storage.type=="WEIGHT_GRAD":
+                weight_grad_list.append(rec)
+            elif rec.tensor.storage.type=="FEATURE_GRAD":
+                feature_grad_list.append(rec)
+
+        ground = [0]*(self.x_max+1)
+
+        def put_rec(rec):
+            x_range = rec.x_range
+            height = rec.height
+            ground_max = self.max(ground,x_range[0],x_range[1])
+            ground_new_height = ground_max+height
+            for i in range(x_range[0],x_range[1]):
+                ground[i] = ground_new_height
+            rec.y_range = [ground_max,ground_new_height]
+            return ground_new_height
+
+        #先放feature
+        for rec in feature_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+        
+        #再放weight_grad
+        for rec in weight_grad_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+
+        #最后放feature_grad
+        for rec in feature_grad_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+
+        return self.y_max
+
+class RectangleManagerRandomSmall(RectangleManager):
+    """参数立即更新，减小权重的生命周期
+    """
+    def __init__(self):
+        super().__init__(name="4.random-small")
+    
+    def layout(self):
+        feature_list = []
+        weight_grad_list = []
+        feature_grad_list = []
+        life_short_list = []
+
+        for rec in self.rectangle_list:
+            if rec.tensor.storage.type=="WEIGHT_GRAD":
+                weight_grad_list.append(rec)
+            elif rec.tensor.life_end-rec.tensor.life_begin<=3 or rec.tensor.storage.type=="FEATURE_GRAD":
+                life_short_list.append(rec)
+            elif rec.tensor.storage.type=="ACTIVATION":
+                feature_list.append(rec)
+            # elif rec.tensor.storage.type=="FEATURE_GRAD":
+            #     feature_grad_list.append(rec)
+
+        ground = [0]*(self.x_max+1)
+
+        def put_rec(rec):
+            x_range = rec.x_range
+            height = rec.height
+            ground_max = self.max(ground,x_range[0],x_range[1])
+            ground_new_height = ground_max+height
+            for i in range(x_range[0],x_range[1]):
+                ground[i] = ground_new_height
+            rec.y_range = [ground_max,ground_new_height]
+            return ground_new_height
+
+        #先放feature
+        for rec in feature_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+        
+        #再放weight_grad
+        for rec in weight_grad_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+
+        #最后放feature_grad
+        min_height = 9999999999
+        min_order = []
+        ground_copy = [*ground]
+        for i in range(10):
+            y_max_tmp = self.y_max
+            random.shuffle(life_short_list)
+            for rec in life_short_list:
+                new_height = put_rec(rec)
+                y_max_tmp = max(y_max_tmp,new_height)
+            print(f"min:{min_height}, got:{y_max_tmp}")
+            if y_max_tmp<min_height:
+                min_order = [*life_short_list]
+                min_height = y_max_tmp
+            ground = [*ground_copy]
+                
+        life_short_list = min_order
+        for rec in life_short_list:
+            new_height = put_rec(rec)
+            self.y_max = max(self.y_max,new_height)
+
+        return self.y_max

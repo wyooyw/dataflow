@@ -14,9 +14,9 @@ class DualFlatten(Dual):
         out_shape = ForwardFlatten.get_out_shape_by_in_shape(in_shape,None)
         #定义张量
         input = MemoryManager().allocActivation(shape=(in_batch,in_channel,in_height,in_width))
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_channel,in_height,in_width))
+        input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channel,in_height,in_width))
         output = MemoryManager().allocActivation(shape=(in_batch,in_channel*in_height*in_width))
-        output_grad = MemoryManager().allocGrad(shape=(in_batch,in_channel*in_height*in_width))
+        output_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channel*in_height*in_width))
         #定义tensors
         forward_flatten_tensors = ForwardFlattenTensors(input=input,
                                                         output=output)

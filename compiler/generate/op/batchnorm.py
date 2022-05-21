@@ -12,9 +12,9 @@ class DualBatchnorm(Dual):
         in_batch,in_channels,in_height,in_width = in_shape
         #定义张量
         input = MemoryManager().allocActivation(shape=in_shape)
-        input_grad = MemoryManager().allocGrad(shape=in_shape)
+        input_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
         output = MemoryManager().allocActivation(shape=in_shape)
-        output_grad = MemoryManager().allocGrad(shape=in_shape)
+        output_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
 
         avg = MemoryManager().allocActivation(shape=(in_channels,))
         std = MemoryManager().allocActivation(shape=(in_channels,))

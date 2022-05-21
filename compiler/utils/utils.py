@@ -22,19 +22,27 @@ def int_to_bits(num,width,name="Num",endian="big"):
 # def to_hump_naming(s):
 #     pass
 
-# def select_no_sort(ls,num=1):
-#     if len(ls)<num:
-#         return
-#     if len(ls)==num:
-#         return ls
-#     size = len(ls)
-#     if num==1:
-#         for item in ls:
-#             yield item
-#     elif num==2 and size==3:
-#         i
-
-
-# if __name__=="__main__":
-#     for select in select_no_sort([0,1,2,3],3):
-#         print(select)
+def select(ls,num):
+    """从ls里选num个数
+    """
+    index_set = _select_index(len(ls),num)
+    for index in index_set:
+        yield [ls[idx] for idx in index]
+        
+def _select_index(n,m):
+    """从0到n-1里选m个数，选出的组数内部，顺序都是从小到大。
+    """
+    assert n>0 and n<10 and m<=n and m >= 0
+    array = list(range(0,n))
+    result = []
+    tmp = []
+    def dfs(index,step):
+        if step==m:
+            result.append([*tmp])
+            return
+        for i in range(index,n):
+            tmp.append(i)
+            dfs(i+1,step+1)
+            tmp.pop()
+    dfs(0,0)
+    return result

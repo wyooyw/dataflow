@@ -20,7 +20,7 @@ class DualAdd(Dual):
         input1 = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
         input2 = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
         output = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
+        grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channels,in_height,in_width))
 
         forward_add_tensors = ForwardAddTensors(input1=input1,
                                                 input2=input2,

@@ -18,9 +18,9 @@ class DualSplit(Dual):
 
         #定义张量
         input = MemoryManager().allocActivation(shape=in_shape)
-        input_grad = MemoryManager().allocGrad(shape=in_shape)
-        output_grad1 = MemoryManager().allocGrad(shape=in_shape)
-        output_grad2 = MemoryManager().allocGrad(shape=in_shape)
+        input_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
+        output_grad1 = MemoryManager().allocFeatureGrad(shape=in_shape)
+        output_grad2 = MemoryManager().allocFeatureGrad(shape=in_shape)
 
         forward_split_tensors = ForwardSplitTensors(input=input)
         backward_split_tensors = BackwardSplitTensors(input_grad=input_grad,

@@ -12,9 +12,9 @@ class DualSoftmax(Dual):
         in_batch,in_length = in_shape
         #定义张量
         input = MemoryManager().allocActivation(shape=(in_batch,in_length))
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_length))
+        input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_length))
         output = MemoryManager().allocActivation(shape=(in_batch,in_length))
-        output_grad = MemoryManager().allocGrad(shape=(in_batch,in_length))
+        output_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_length))
         #定义tensors
         forward_softmax_tensors = ForwardSoftmaxTensors(input=input,
                                                         output=output)

@@ -7,7 +7,8 @@ from compiler.utils import unique_class_name
 class StorageType:
     WEIGHT="WEIGHT"
     ACTIVATION="ACTIVATION"
-    GRAD="GRAD"
+    WEIGHT_GRAD="WEIGHT_GRAD"
+    FEATURE_GRAD="FEATURE_GRAD"
 
 class Storage:
     # def __init__(self,type:StorageType,addr:int,size:int,content:list):

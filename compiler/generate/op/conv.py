@@ -31,12 +31,12 @@ class DualConv(Dual):
                                                 stride=stride)
         #定义张量
         weight = MemoryManager().allocWeight(shape=(out_channels,in_channels,kernel_size,kernel_size))
-        weight_grad = MemoryManager().allocGrad(shape=(out_channels,in_channels,kernel_size,kernel_size))
+        weight_grad = MemoryManager().allocWeightGrad(shape=(out_channels,in_channels,kernel_size,kernel_size))
         input = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
+        input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channels,in_height,in_width))
         #TODO output_size把stride考虑进来，调用ForwardConv的get_out_shape_by_in_shape
         out_shape = ForwardConv.get_out_shape_by_in_shape(in_shape,forward_conv_attrs)
-        output_grad = MemoryManager().allocGrad(shape=out_shape)
+        output_grad = MemoryManager().allocFeatureGrad(shape=out_shape)
         output = MemoryManager().allocActivation(shape=out_shape)
 
         forward_conv_tensors = ForwardConvTensors(weight=weight,

@@ -13,7 +13,7 @@ class DualEntropy(Dual):
         in_batch,in_length = in_shape
         #定义张量
         input = MemoryManager().allocActivation(shape=(in_batch,in_length))
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_length))
+        input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_length))
         label = MemoryManager().allocActivation(shape=(in_batch,in_length))
         loss = MemoryManager().allocActivation(shape=(1,))
         #定义tensors

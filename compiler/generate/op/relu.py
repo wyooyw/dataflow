@@ -13,9 +13,9 @@ class DualRelu(Dual):
         #定义张量
         mask = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
         input = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width)) #由上一个算子申请？
-        input_grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
+        input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channels,in_height,in_width))
         output = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        output_grad = MemoryManager().allocGrad(shape=(in_batch,in_channels,in_height,in_width))
+        output_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channels,in_height,in_width))
         
         forward_relu_tensors = ForwardReluTensors(mask=mask,
                                                 input=input,

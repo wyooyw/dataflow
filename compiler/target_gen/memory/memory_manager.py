@@ -1,5 +1,5 @@
 from compiler.utils.singleton import singleton
-from compiler.utils.rectangle import Rectangle,RectangleManager
+from compiler.utils.rectangle import Rectangle,RectangleManager,getRectangleManager
 from compiler.target_gen.memory.net import Net
 from compiler.target_gen.memory.mem_operator import MemOperator
 from compiler.target_gen.memory.storage import Storage,StorageType
@@ -60,9 +60,13 @@ class MemoryManager(object):
         segment = self.segments[SegmentType.ACTIVATION_STORAGE]
         return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.ACTIVATION,content=content)
     
-    def allocGrad(self,shape,content=None):
+    def allocWeightGrad(self,shape,content=None):
         segment = self.segments[SegmentType.GRAD_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.GRAD,content=content)
+        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.WEIGHT_GRAD,content=content)
+
+    def allocFeatureGrad(self,shape,content=None):
+        segment = self.segments[SegmentType.GRAD_STORAGE]
+        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.FEATURE_GRAD,content=content)
     
     def calcBases(self):
         self.segments[SegmentType.WEIGHT_STORAGE].base = 0
@@ -113,7 +117,7 @@ class MemoryManager(object):
         #为每个张量设定生命周期
         self._mark_life_time(net)
 
-        rec_manager = RectangleManager()
+        rec_manager = getRectangleManager()
         visit_tensor = set()
         for op,tensor_name,tensor in net.all_tensors():
             if tensor in visit_tensor:
@@ -123,12 +127,8 @@ class MemoryManager(object):
 
             rec = self._make_rectangle(tensor)
             visit_tensor.add(tensor)
-            if tensor.storage.type==StorageType.ACTIVATION:
-                rec_manager.add_rectangle_fix(rec)
-            else:
-                rec_manager.add_rectangle(rec)
+            rec_manager.add_rectangle(rec)
             
-        
         memory_max = rec_manager.layout()
         print("memory_max:",memory_max)
         rec_manager.paint()
@@ -157,10 +157,12 @@ class MemoryManager(object):
         高为tensor内存占用大小
         """
         x_range = (tensor.life_begin,tensor.life_end)
-        height = tensor.storage.size
+        height = tensor.storage.size * 2#fp16
         if tensor.storage.type==StorageType.ACTIVATION:
             color = "blue"
-        elif tensor.storage.type==StorageType.GRAD:
+        elif tensor.storage.type==StorageType.FEATURE_GRAD:
+            color = "green"
+        elif tensor.storage.type==StorageType.WEIGHT_GRAD:
             color = "red"
         else:
             assert False

@@ -3,6 +3,7 @@ from compiler.target_gen.memory.mem_operator import MemOperator
 from compiler.generate.op.attrs.attrs import Attrs
 from compiler.generate.op.tensors.op_tensors import OpTensors
 import copy
+from orderedset import OrderedSet
 class OperatorType(Enum):
     # 1~50 单个的算子
     FORWARD_CONV = 0
@@ -41,8 +42,8 @@ class Operator:
     def __init__(self,type:OperatorType,name="",attrs:Attrs=Attrs(),tensors:OpTensors=OpTensors(),in_shape=[],out_shape=[]):
         self.name = name        #算子名称
         self.type = type        #算子类型
-        self.predecessor = set()   #前驱算子
-        self.successor = set()     #后继算子
+        self.predecessor = OrderedSet()#set()   #前驱算子
+        self.successor = OrderedSet()#set()     #后继算子
         self.net = None
         self.attrs = attrs      #算子属性
         attrs.op = self

@@ -182,8 +182,9 @@ def testMemoryManage():
     # out = net(x)
     
     total_params = sum(p.numel() for p in net.parameters())
-    
-    converter = Converter(net,in_shape=[4,3,32,32])
+    in_shape=[16,3,32,32]
+    print("in_shape:",in_shape)
+    converter = Converter(net,in_shape=in_shape)
     converter.convert()
     net = converter.net
 
@@ -207,17 +208,19 @@ def testMemoryManage():
 
     replace_tool = ReplaceTool(net=net,config_path="./backends/sparse_train/replace.yaml")
     replace_tool.replace_all()
-    print("======================== Net =========================")
-    print(net)
-    print("\n======================== Memory =========================")
+    # print("======================== Net =========================")
+    # print(net)
+    # print("\n======================== Memory =========================")
     storage_record = {
         StorageType.ACTIVATION:[],
-        StorageType.GRAD:[],
+        StorageType.FEATURE_GRAD:[],
+        StorageType.WEIGHT_GRAD:[],
         StorageType.WEIGHT:[]
     }
     storage_stats = {
         StorageType.ACTIVATION:0,
-        StorageType.GRAD:0,
+        StorageType.FEATURE_GRAD:0,
+        StorageType.WEIGHT_GRAD:0,
         StorageType.WEIGHT:0
     }
     storage_visit = {}
@@ -233,8 +236,10 @@ def testMemoryManage():
                     storage_record[storage.type].append(storage)
                     storage_stats[storage.type] += storage.size
                 else:
+                    # pass
                     print(f"  [{storage.type}] {key} (share storage with {storage_visit[storage]})")
             else:
+                # pass
                 print(f"  [None] {key}")
     total = 0
     for key,stats in storage_stats.items():
@@ -246,7 +251,8 @@ def testMemoryManage():
         kb = int(kb*100)/100
         mb = int(mb*100)/100
         print(f"{key}:{stats} num, {b}B = {kb}KB = {mb}MB")
-    print("total num:",total)
+    # print("total num:",total)
+    print(storage_stats)
 
     # print(net.count())
     net.reduce_tensor()
