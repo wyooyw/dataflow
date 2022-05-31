@@ -141,10 +141,16 @@ class RectangleManager:
         self.title()
         # self.y_max += 1
         # self.x_max += 1
-        #batch_size=1: 15915800
+        #resnet:
+        #batch_size=1: 26540000
         #batch_size=4: 39172000
-        #batch_size=8: 89701400
-        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,89701400)))
+        #batch_size=8: 56015100
+
+        #alexnet:
+        #batch_size=1: 33436900
+        #batch_size=4: 
+        #batch_size=8: 44562300
+        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,44562300)))
         self.painter.show()
     
     def save(self):
@@ -153,7 +159,7 @@ class RectangleManager:
         self.title()
         # self.y_max += 1
         # self.x_max += 1
-        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,89701400)))
+        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,44562300)))
         self.painter.save(self.name)
 
 def getRectangleManager():

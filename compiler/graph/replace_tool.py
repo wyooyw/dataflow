@@ -11,6 +11,7 @@ from compiler.generate.op.add import DualAdd,ForwardAdd,BackwardAdd
 from compiler.generate.op.split import DualSplit,ForwardSplit,BackwardSplit
 from compiler.generate.op.batchnorm import DualBatchnorm,ForwardBatchnorm,BackwardBatchnorm
 from compiler.generate.op.maxpool import DualMaxpool,ForwardMaxpool,BackwardMaxpool
+from compiler.generate.op.dropout import DualDropout,ForwardDropout,BackwardDropout
 from backends.sparse_train.op import *
 from functools import reduce
 
@@ -151,6 +152,30 @@ class Finder:
                             self.tmp.pop()
                             if len(ret)>0:
                                 break
+            
+        return ret
+
+    def dfs_experiment(self,begin_op:Operator,step:int):
+        """拥有单一起始节点，多结束节点，允许分叉的子图搜索算法
+        """
+        ret = []
+        if step==len(self.pattern)-1:
+            if self.is_valid(self.tmp):
+                self.visit = self.visit | set(self.tmp)
+                ret = [*self.tmp]
+            else:
+                ret = []
+        else:
+            successors = begin_op.successor
+            for successor in successors:
+                if not successor in self.visit:
+                    if type(successor) == self.pattern[step+1]:
+                        self.tmp.append(successor)
+                        ret = self.dfs(successor,step+1)
+                        self.tmp.pop()
+                        if len(ret)>0:
+                            break
+            
         return ret
 
     # def dfs(self,begin_op:Operator,step:int):

@@ -19,6 +19,11 @@ class BackwardSTConv(Operator):
         self.tensors.set("input_grad",self.conv.tensors.get("input_grad"))
         self.tensors.set("weight_grad",self.conv.tensors.get("weight_grad"))
 
+        self.tensors.add_read_tensor("output_grad")
+        self.tensors.add_read_tensor("weight")
+        self.tensors.add_read_tensor("input")
+        self.tensors.add_write_tensor("weight_grad")
+        self.tensors.add_write_tensor("input_grad")
     @classmethod
     def replace_from(self,find_ops):
         """将ForwardConv和ForwardRelu合并为ForwardConvRelu

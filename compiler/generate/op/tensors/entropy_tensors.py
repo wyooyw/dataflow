@@ -7,6 +7,10 @@ class ForwardEntropyTensors(OpTensors):
         self.tensors["loss"] = loss
         self.input = input
         self.output = loss
+        
+        self.add_read_tensor("label")
+        self.add_read_tensor("input")
+        self.add_write_tensor("loss")
 
 class BackwardEntropyTensors(OpTensors):
     def __init__(self,label,input_grad,loss):
@@ -16,3 +20,7 @@ class BackwardEntropyTensors(OpTensors):
         self.tensors["loss"] = loss
         self.input = loss
         self.output = input_grad
+
+        self.add_read_tensor("label")
+        self.add_read_tensor("loss")
+        self.add_write_tensor("input_grad")

@@ -39,12 +39,51 @@
   - BackwardRelu
   - BackwardBatchnorm
   replace: BackwardConvSplitReluBn
-- pattern:
-  - BackwardConv
-  replace: BackwardSTConv
+# - pattern:
+#   - BackwardConv
+#   replace: BackwardSTConv
 
 # - pattern:
 #   - ForwardConv
 #   - ForwardRelu
 #   - DoubleBn
 #   replace: ForwardConvReluBnBn
+
+#Alexnet
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  - ForwardMaxpool
+  replace: ForwardConvReluMaxpool
+- pattern:
+  - ForwardConv
+  - ForwardRelu
+  replace: ForwardConvRelu
+- pattern:
+  - ForwardLinear
+  - ForwardRelu
+  - ForwardDropout
+  replace: ForwardLinearReluDropout
+- pattern:
+  - ForwardLinear
+  - ForwardRelu
+  replace: ForwardLinearRelu
+
+- pattern:
+  - BackwardConv
+  - BackwardRelu
+  replace: BackwardConvRelu
+- pattern:
+  - BackwardConv
+  - BackwardMaxpool
+  - BackwardRelu
+  replace: BackwardConvMaxpoolRelu
+- pattern:
+  - BackwardLinear
+  - BackwardRelu
+  replace: BackwardLinearRelu
+- pattern:
+  - BackwardLinear
+  - BackwardDropout
+  - BackwardRelu
+  replace: BackwardLinearDropoutRelu

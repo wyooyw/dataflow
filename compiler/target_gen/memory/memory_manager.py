@@ -168,3 +168,36 @@ class MemoryManager(object):
             assert False
         return Rectangle(x_range,height,color,tensor)
     
+    def count_read_and_write_times(self,net):
+        read_count = 0
+        write_count = 0
+        cur_op = None
+        cur_read_count = 0
+        cur_write_count = 0
+        print("{}{}{}".format("op".ljust(20),
+                                "read_count".ljust(20),
+                                "write_count".ljust(20)))
+        for op,tensor_name,tensor in net.all_tensors():
+            if op.name=="FEdge_0" or op.name=="BEdge_0":
+                continue
+            if not op==cur_op:
+                if cur_op.starts
+                if not cur_op==None:
+                    print("{}{}{}".format(cur_op.name.ljust(20),
+                                str(cur_read_count).ljust(20),
+                                str(cur_write_count).ljust(20)))
+                cur_op = op
+                cur_read_count = 0
+                cur_write_count = 0
+            if tensor_name in op.tensors.read_tensors:
+                read_count += tensor.storage.size
+                cur_read_count += tensor.storage.size
+            elif tensor_name in op.tensors.write_tensors:
+                write_count += tensor.storage.size
+                cur_write_count += tensor.storage.size
+            else:
+                assert False,f"A tensor not is not be read or write!{op.name},{tensor_name}"
+        print("{}{}{}".format(cur_op.name.ljust(20),
+                                str(cur_read_count).ljust(20),
+                                str(cur_write_count).ljust(20)))
+        print(f"read_count:{read_count},write_count:{write_count}")

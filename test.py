@@ -15,6 +15,7 @@ from compiler.generate.op.batchnorm import ForwardBatchnorm,BackwardBatchnorm
 import torch.nn as nn
 from model.resnet import resnet18_cifar
 from model.lenet import *
+from model.alexnet import AlexNet
 
 # from compiler.generate.op.aggregate import AggregateDualGenerator
 from compiler.utils.unique_class_name import unique_class_name
@@ -175,19 +176,21 @@ def testMerger():
     # print("tensor size max:",MemoryManager().get_tensor_max()," items")
 
 def testMemoryManage():
-    # net = TestNet5()
+    # net = TestNet4()
     net = resnet18_cifar()
+    # net = AlexNet()
 
     # x = torch.ones(1,3,32,32)
     # out = net(x)
     
     total_params = sum(p.numel() for p in net.parameters())
-    in_shape=[16,3,32,32]
+    in_shape=[8,3,32,32]
     print("in_shape:",in_shape)
     converter = Converter(net,in_shape=in_shape)
+    # print(converter.trace.graph)
     converter.convert()
     net = converter.net
-
+    # print(net)
     
     #将BN算子的avg,std,alpha,beta合并成一个tensor
     #编译器里不好实现，这里hack一下
@@ -201,6 +204,7 @@ def testMemoryManage():
                 bn_use = MemoryManager().allocWeight((4,op.tensors.get("avg").shape[0]))
                 tmp[avg_storage] = bn_use
             op.tensors.set("bn_use",bn_use)
+            op.tensors.add_read_tensor("bn_use")
             op.tensors.tensors.pop("avg")
             op.tensors.tensors.pop("std")
             op.tensors.tensors.pop("alpha")
@@ -265,8 +269,9 @@ def testMemoryManage():
     # instr_gen = InstructionGenerator(net)
     # for instr in instr_gen.instruction_list:
     #     print(instr)
-    # print(f'Pytorch say: {total_params} total parameters.')
-    MemoryManager().tensor_memory_layout2(net)
+    print(f'Pytorch say: {total_params} total parameters.')
+    # MemoryManager().tensor_memory_layout2(net)
+    MemoryManager().count_read_and_write_times(net)
     
 if __name__=="__main__":
     # testPointer()

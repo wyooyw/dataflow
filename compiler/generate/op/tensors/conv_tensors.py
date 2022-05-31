@@ -8,6 +8,10 @@ class ForwardConvTensors(OpTensors):
         self.input = input
         self.output = output
 
+        self.add_read_tensor("weight")
+        self.add_read_tensor("input")
+        self.add_write_tensor("output")
+
 class BackwardConvTensors(OpTensors):
     def __init__(self,weight,input,output_grad,weight_grad,input_grad):
         super().__init__()
@@ -18,3 +22,9 @@ class BackwardConvTensors(OpTensors):
         self.tensors["input_grad"] = input_grad
         self.input = output_grad
         self.output = input_grad
+
+        self.add_read_tensor("weight")
+        self.add_read_tensor("input")
+        self.add_read_tensor("output_grad")
+        self.add_write_tensor("weight_grad")
+        self.add_write_tensor("input_grad")

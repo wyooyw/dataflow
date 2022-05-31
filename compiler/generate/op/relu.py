@@ -9,13 +9,13 @@ import torch.nn as nn
 
 class DualRelu(Dual):
     def __init__(self,in_shape):
-        in_batch,in_channels,in_height,in_width = in_shape
+        # in_batch,in_channels,in_height,in_width = in_shape
         #定义张量
-        mask = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        input = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width)) #由上一个算子申请？
-        input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channels,in_height,in_width))
-        output = MemoryManager().allocActivation(shape=(in_batch,in_channels,in_height,in_width))
-        output_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_channels,in_height,in_width))
+        mask = MemoryManager().allocActivation(shape=in_shape)
+        input = MemoryManager().allocActivation(shape=in_shape) #由上一个算子申请？
+        input_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
+        output = MemoryManager().allocActivation(shape=in_shape)
+        output_grad = MemoryManager().allocFeatureGrad(shape=in_shape)
         
         forward_relu_tensors = ForwardReluTensors(mask=mask,
                                                 input=input,

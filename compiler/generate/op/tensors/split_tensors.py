@@ -14,3 +14,7 @@ class BackwardSplitTensors(OpTensors):
         self.tensors["input_grad"] = input_grad
         self.input = [output_grad1,output_grad2]
         self.output = input_grad
+
+        self.add_read_tensor("output_grad1")
+        self.add_read_tensor("output_grad2")
+        self.add_write_tensor("input_grad")

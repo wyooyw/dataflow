@@ -11,6 +11,8 @@ call_module:
   new: DualMaxpool
 - old: nn.BatchNorm2d
   new: DualBatchnorm
+- old: nn.Dropout
+  new: DualDropout
 
 call_function: 
 - old: operator.add

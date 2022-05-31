@@ -5,11 +5,25 @@ class OpTensors:
     """
     def __init__(self):
         self.tensors = collections.OrderedDict()
+        self.write_tensors = set()
+        self.read_tensors = set()
         self.input = None
         self.output = None
         self.output_idx = -1
         self.input_idx = -1
         self.op = None #该OpTensors的父元素
+    
+    def add_read_tensor(self,tensor_name):
+        assert tensor_name in self.tensors
+        assert tensor_name not in self.read_tensors
+        assert tensor_name not in self.write_tensors
+        self.read_tensors.add(tensor_name)
+    
+    def add_write_tensor(self,tensor_name):
+        assert tensor_name in self.tensors
+        assert tensor_name not in self.read_tensors
+        assert tensor_name not in self.write_tensors
+        self.write_tensors.add(tensor_name)
 
     def get_input(self):
         return [self.tensors[item] for item in self.input]

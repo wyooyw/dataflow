@@ -8,6 +8,14 @@ class ForwardBatchnormTensors(OpTensors):
         self.tensors["beta"] = beta
         self.tensors["input"] = input
         self.tensors["output"] = output
+
+        self.add_read_tensor("avg")
+        self.add_read_tensor("std")
+        self.add_read_tensor("alpha")
+        self.add_read_tensor("beta")
+        self.add_read_tensor("input")
+        self.add_write_tensor("output")
+
         self.input = input
         self.output = output
 
@@ -22,3 +30,10 @@ class BackwardBatchnormTensors(OpTensors):
         self.tensors["output_grad"] = output_grad
         self.input = output_grad
         self.output = input_grad
+
+        self.add_read_tensor("avg")
+        self.add_read_tensor("std")
+        self.add_read_tensor("alpha")
+        self.add_read_tensor("beta")
+        self.add_read_tensor("output_grad")
+        self.add_write_tensor("input_grad")

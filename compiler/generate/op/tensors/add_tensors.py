@@ -5,6 +5,9 @@ class ForwardAddTensors(OpTensors):
         self.tensors["input1"] = input1
         self.tensors["input2"] = input2
         self.tensors["output"] = output
+        self.add_read_tensor("input1")
+        self.add_read_tensor("input2")
+        self.add_write_tensor("output")
         self.input = [input1,input2]
         self.output = output
 

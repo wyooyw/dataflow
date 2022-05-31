@@ -20,6 +20,11 @@ class ForwardConvBn(Operator):
         self.tensors.set("bn.bn_use",self.bn.tensors.get("bn_use"))
         self.tensors.set("output",self.bn.tensors.get("output"))
 
+        self.tensors.add_read_tensor("input")
+        self.tensors.add_read_tensor("conv.weight")
+        self.tensors.add_read_tensor("bn.bn_use")
+        self.tensors.add_write_tensor("output")
+
     def to_instr(self):
         instruction = Instruction(name=self.name, init_data={
             "net_type": "resnet",

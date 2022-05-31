@@ -24,6 +24,13 @@ class ForwardConvReluBnBn(Operator):
         self.tensors.set("output1",self.bn1.tensors.get("output"))
         self.tensors.set("output2",self.bn2.tensors.get("output"))
         
+        self.tensors.add_read_tensor("input")
+        self.tensors.add_read_tensor("conv.weight")
+        self.tensors.add_read_tensor("bn1.bn_use")
+        self.tensors.add_read_tensor("bn2.bn_use")
+        self.tensors.add_write_tensor("relu.mask")
+        self.tensors.add_write_tensor("output1")
+        self.tensors.add_write_tensor("output2")
     @classmethod
     def replace_from(self,find_ops):
         """将ForwardConv和ForwardRelu合并为ForwardConvRelu

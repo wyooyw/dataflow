@@ -152,7 +152,7 @@ class Operator:
         input_names = [op.name for op in self.predecessor]
         output_names = [op.name for op in self.successor]
         is_backend = '*' if self.type==OperatorType.BACKEND else ''
-        return f"{is_backend}{self.name},(predecessor={input_names}, successor={output_names})"#,in_shape={self.in_shape},out_shape={self.out_shape}"
+        return f"{is_backend}{self.name},(predecessor={input_names}, successor={output_names}),in_shape={self.in_shape},out_shape={self.out_shape}"
 
     def __copy__(self):
         """复制算子

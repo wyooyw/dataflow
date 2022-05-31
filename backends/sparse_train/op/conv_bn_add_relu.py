@@ -26,6 +26,13 @@ class ForwardConvBnAddRelu(Operator):
         self.tensors.set("relu.mask",self.relu.tensors.get("mask"))
         self.tensors.set("output",self.relu.tensors.get("output"))
 
+        self.tensors.add_read_tensor("input")
+        self.tensors.add_read_tensor("conv.weight")
+        self.tensors.add_read_tensor("bn.bn_use")
+        self.tensors.add_read_tensor("add")
+        self.tensors.add_write_tensor("relu.mask")
+        self.tensors.add_write_tensor("output")
+
     def to_instr(self):
         instruction = Instruction(name=self.name,init_data={
             "net_type":"resnet",

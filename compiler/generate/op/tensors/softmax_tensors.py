@@ -7,6 +7,9 @@ class ForwardSoftmaxTensors(OpTensors):
         self.input = input
         self.output = output
 
+        self.add_read_tensor("input")
+        self.add_write_tensor("output")
+
 class BackwardSoftmaxTensors(OpTensors):
     def __init__(self,input_grad,output_grad):
         super().__init__()
@@ -14,3 +17,6 @@ class BackwardSoftmaxTensors(OpTensors):
         self.tensors["output_grad"] = output_grad
         self.input = output_grad
         self.output = input_grad
+
+        self.add_read_tensor("output_grad")
+        self.add_write_tensor("input_grad")

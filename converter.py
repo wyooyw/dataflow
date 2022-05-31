@@ -17,6 +17,7 @@ from compiler.generate.op.maxpool import DualMaxpool
 from compiler.generate.op.batchnorm import DualBatchnorm
 from compiler.generate.op.edge import DualEdge
 from compiler.generate.op.split import DualSplit,ForwardSplit
+from compiler.generate.op.dropout import DualDropout
 
 # from compiler.generate.op import *
 from compiler.generate.net.net import Net

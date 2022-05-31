@@ -14,7 +14,7 @@ class DualEntropy(Dual):
         #定义张量
         input = MemoryManager().allocActivation(shape=(in_batch,in_length))
         input_grad = MemoryManager().allocFeatureGrad(shape=(in_batch,in_length))
-        label = MemoryManager().allocActivation(shape=(in_batch,in_length))
+        label = MemoryManager().allocActivation(shape=(in_batch,10))
         loss = MemoryManager().allocActivation(shape=(1,))
         #定义tensors
         forward_entropy_tensors = ForwardEntropyTensors(input=input,

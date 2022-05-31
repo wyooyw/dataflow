@@ -105,13 +105,13 @@ class TestNet3(nn.Module):
 class TestNet4(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1,1,3)
-        self.relu1 = nn.ReLU()
+        self.conv = nn.Conv2d(1,1,2)
+        self.relu = nn.ReLU()
         self.flatten = nn.Flatten()
         pass
     def forward(self,x):
-        x = self.conv1(x)
-        x = self.relu1(x)
+        x = self.conv(x)
+        x = self.relu(x)
         x = self.flatten(x)
         return x
 
