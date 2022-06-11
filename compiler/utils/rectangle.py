@@ -150,7 +150,7 @@ class RectangleManager:
         #batch_size=1: 33436900
         #batch_size=4: 
         #batch_size=8: 44562300
-        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,44562300)))
+        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,39172000)))
         self.painter.show()
     
     def save(self):
@@ -159,14 +159,14 @@ class RectangleManager:
         self.title()
         # self.y_max += 1
         # self.x_max += 1
-        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,44562300)))
+        self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,39172000)))
         self.painter.save(self.name)
 
 def getRectangleManager():
-    # manager = RectangleManagerOrigin()
+    manager = RectangleManagerOrigin()
     # manager = RectangleManagerSimpleReuse()
     # manager = RectangleManagerWeightUpdateImm()
-    manager = RectangleManagerRandomSmall()
+    # manager = RectangleManagerRandomSmall()
     return manager
 
 class RectangleManagerOrigin(RectangleManager):
@@ -209,7 +209,7 @@ class RectangleManagerOrigin(RectangleManager):
 
         #再放weight_grad
         for rec in weight_grad_list:
-            rec.x_range = (rec.x_range[0],self.x_max) #设weight_grad的生命周期要一直到最后
+            # rec.x_range = (rec.x_range[0],self.x_max) #设weight_grad的生命周期要一直到最后
             new_height = put_rec(rec)
             self.y_max = max(self.y_max,new_height)
             for i in range(0,self.x_max+1):
@@ -262,7 +262,7 @@ class RectangleManagerSimpleReuse(RectangleManager):
         
         #再放weight_grad
         for rec in weight_grad_list:
-            rec.x_range = (rec.x_range[0],self.x_max) #设weight_grad的生命周期要一直到最后
+            # rec.x_range = (rec.x_range[0],self.x_max) #设weight_grad的生命周期要一直到最后
             new_height = put_rec(rec)
             self.y_max = max(self.y_max,new_height)
 

@@ -11,6 +11,9 @@ from compiler.generate.op.conv import DualConv,ForwardConv
 from compiler.generate.op.relu import DualRelu,ForwardRelu
 from compiler.generate.op.add import ForwardAdd
 from compiler.generate.op.batchnorm import ForwardBatchnorm,BackwardBatchnorm
+from compiler.scheduler.normal_scheduler import NormalScheduler
+from compiler.scheduler.wu_imm_scheduler import WUImmScheduler
+from simulator.memory import Memory
 # from compiler.generate.op.split import SplitDualGenerator
 import torch.nn as nn
 from model.resnet import resnet18_cifar
@@ -176,45 +179,52 @@ def testMerger():
     # print("tensor size max:",MemoryManager().get_tensor_max()," items")
 
 def testMemoryManage():
-    # net = TestNet4()
-    net = resnet18_cifar()
-    # net = AlexNet()
+    torch_net = TestNet4()
+    # torch_net = resnet18_cifar()
+    # torch_net = AlexNet()
+    # net = torchvision.
 
     # x = torch.ones(1,3,32,32)
     # out = net(x)
     
-    total_params = sum(p.numel() for p in net.parameters())
-    in_shape=[8,3,32,32]
+    total_params = sum(p.numel() for p in torch_net.parameters())
+    in_shape=[3,3,4,4]
     print("in_shape:",in_shape)
-    converter = Converter(net,in_shape=in_shape)
+    converter = Converter(torch_net,in_shape=in_shape)
     # print(converter.trace.graph)
     converter.convert()
     net = converter.net
+    
     # print(net)
     
     #将BN算子的avg,std,alpha,beta合并成一个tensor
     #编译器里不好实现，这里hack一下
-    tmp = {}
-    for op in net.topo():
-        if type(op)==ForwardBatchnorm or type(op)==BackwardBatchnorm:
-            avg_storage = op.tensors.get("avg").storage
-            if avg_storage in tmp:
-                bn_use = tmp[avg_storage]
-            else:
-                bn_use = MemoryManager().allocWeight((4,op.tensors.get("avg").shape[0]))
-                tmp[avg_storage] = bn_use
-            op.tensors.set("bn_use",bn_use)
-            op.tensors.add_read_tensor("bn_use")
-            op.tensors.tensors.pop("avg")
-            op.tensors.tensors.pop("std")
-            op.tensors.tensors.pop("alpha")
-            op.tensors.tensors.pop("beta")
+    # tmp = {}
+    # for op in net.topo():
+    #     if type(op)==ForwardBatchnorm or type(op)==BackwardBatchnorm:
+    #         avg_storage = op.tensors.get("avg").storage
+    #         if avg_storage in tmp:
+    #             bn_use = tmp[avg_storage]
+    #         else:
+    #             bn_use = MemoryManager().allocWeight((4,op.tensors.get("avg").shape[0]))
+    #             tmp[avg_storage] = bn_use
+    #         op.tensors.set("bn_use",bn_use)
+    #         op.tensors.add_read_tensor("bn_use")
+    #         op.tensors.tensors.pop("avg")
+    #         op.tensors.tensors.pop("std")
+    #         op.tensors.tensors.pop("alpha")
+    #         op.tensors.tensors.pop("beta")
 
     replace_tool = ReplaceTool(net=net,config_path="./backends/sparse_train/replace.yaml")
-    replace_tool.replace_all()
+    # replace_tool.replace_all()
     # print("======================== Net =========================")
     # print(net)
     # print("\n======================== Memory =========================")
+    scheduler = NormalScheduler()
+    # scheduler = WUImmScheduler()
+    scheduler.schedule(net)
+    print(net)
+    
     storage_record = {
         StorageType.ACTIVATION:[],
         StorageType.FEATURE_GRAD:[],
@@ -257,7 +267,7 @@ def testMemoryManage():
         print(f"{key}:{stats} num, {b}B = {kb}KB = {mb}MB")
     # print("total num:",total)
     print(storage_stats)
-
+    
     # print(net.count())
     net.reduce_tensor()
     print(net.count())
@@ -269,9 +279,29 @@ def testMemoryManage():
     # instr_gen = InstructionGenerator(net)
     # for instr in instr_gen.instruction_list:
     #     print(instr)
-    print(f'Pytorch say: {total_params} total parameters.')
-    # MemoryManager().tensor_memory_layout2(net)
-    MemoryManager().count_read_and_write_times(net)
+    # print(f'Pytorch say: {total_params} total parameters.')
+    # MemoryManager().tensor_memory_layout2(net,show_image=True,save_image=True)
+    MemoryManager().tensor_memory_layout2(net)
+    from functools import reduce
+    # input = torch.range(1.0,reduce(lambda x,y:x*y,in_shape)).reshape(in_shape)
+    input = torch.randn(in_shape)
+    input.requires_grad=True
+
+    output = Memory().get(net.sim_run_to(input,"BBatchnorm_0").tensors.get("input_grad").addr)
+    torch_output = torch_net(input)
+    torch_output = torch.sum(torch_output)
+    torch_output.backward()
+    torch_output = input.grad
+    print("my   :",output)
+    print("torch:",torch_output)
+    if output.shape==torch_output.shape:
+        print(torch.max(torch.abs(output-torch_output))<0.01)
+    else:
+        print(f"Shape is not equal! output.shape={output.shape}, torch_output.shape={torch_output.shape}")
+        
+    # MemoryManager().count_read_and_write_times(net)
+    # print(net.hash["BConv_1"].get_tensors().tensors["weight"].storage.data)
+    # print(net.hash["BConv_0"].get_tensors().tensors["weight"].storage.data)
     
 if __name__=="__main__":
     # testPointer()

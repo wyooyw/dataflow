@@ -35,7 +35,9 @@ class OperatorType(Enum):
 
     FORWARD = 1000
     BACKWARD = 1001
-    BACKEND = 1002
+    WEIGHT_GRADIENT = 1002
+    WEIGHT_UPDATE = 1003
+    BACKEND = 1004
     
 
 class Operator:
@@ -85,25 +87,27 @@ class Operator:
         """双向添加前驱算子
         """
         for op in ops:
-            if _share_storage:
-                if type(self.get_tensors().input)==list:
-                    op.get_tensors().output.storage.same_as(self.get_tensors().input[len(self.predecessor)].storage)
-                else:
-                    op.get_tensors().output.storage.same_as(self.get_tensors().input.storage)
-            self.add_predecessor(op)
-            op.add_successor(self)
+            if op: #有时op会为None
+                if _share_storage and op.get_tensors().output and self.get_tensors().input:
+                    if type(self.get_tensors().input)==list:
+                        op.get_tensors().output.storage.same_as(self.get_tensors().input[len(self.predecessor)].storage)
+                    else:
+                        op.get_tensors().output.storage.same_as(self.get_tensors().input.storage)
+                self.add_predecessor(op)
+                op.add_successor(self)
     
     def connect_successor(self,*ops,_share_storage=False):
         """双向添加后继算子
         """
         for op in ops:
-            if _share_storage:
-                if type(op.get_tensors().input)==list:
-                    op.get_tensors().input[len(op.predecessor)].storage.same_as(self.get_tensors().output.storage)
-                else:
-                    op.get_tensors().input.storage.same_as(self.get_tensors().output.storage)
-            self.add_successor(op)
-            op.add_predecessor(self)
+            if op: #有时op会为None
+                if _share_storage and op.get_tensors().input and self.get_tensors().output:
+                    if type(op.get_tensors().input)==list:
+                        op.get_tensors().input[len(op.predecessor)].storage.same_as(self.get_tensors().output.storage)
+                    else:
+                        op.get_tensors().input.storage.same_as(self.get_tensors().output.storage)
+                self.add_successor(op)
+                op.add_predecessor(self)
             
     
     def next_output_to(self,op):
@@ -146,6 +150,18 @@ class Operator:
             self.remove_successor(op)
             op.remove_predecessor(self)
 
+    def remove_all_predecessor(self):
+        """
+        单向删除所有前驱节点
+        """
+        self.predecessor = OrderedSet()
+
+    def remove_all_successor(self):
+        """
+        单向删除所有后继节点
+        """
+        self.successor = OrderedSet()
+
     def __str__(self):
         """打印算子信息
         """
@@ -182,4 +198,7 @@ class Operator:
         """获取张量所属的所有tensor
         """
         return self.tensors
+
+    def sim_run(self):
+        pass
     

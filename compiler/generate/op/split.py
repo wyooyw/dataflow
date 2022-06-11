@@ -9,6 +9,7 @@ import torch.nn as nn
 
 class DualSplit(Dual):
     def __init__(self,in_shape):
+        super().__init__()
         in_batch,in_channels,in_height,in_width = in_shape
 
 

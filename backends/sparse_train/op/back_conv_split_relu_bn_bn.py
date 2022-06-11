@@ -7,7 +7,7 @@ from queue import Queue
 from functools import reduce
 class BackwardConvSplitReluBnBn(Operator):
     def __init__(self,conv,split,relu,bn1,bn2):
-        super().__init__(type=OperatorType.BACKEND,
+        super().__init__(type=OperatorType.BACKWARD,
                         attrs=Attrs(),
                         tensors=OpTensors(),
                         name=unique_class_name(self))
@@ -19,8 +19,6 @@ class BackwardConvSplitReluBnBn(Operator):
 
         self.tensors.set("output_grad",self.conv.tensors.get("output_grad"))
         self.tensors.set("conv.weight",self.conv.tensors.get("weight"))
-        self.tensors.set("conv.input",self.conv.tensors.get("input"))
-        self.tensors.set("conv.weight_grad",self.conv.tensors.get("weight_grad"))
 
         add_1,add_2 = self.split.tensors.get("output_grad1"),self.split.tensors.get("output_grad2")
         add_tensor = add_2 if self.conv.tensors.get("input_grad").storage==add_1.storage else add_1
@@ -35,12 +33,10 @@ class BackwardConvSplitReluBnBn(Operator):
 
         self.tensors.add_read_tensor("output_grad")
         self.tensors.add_read_tensor("conv.weight")
-        self.tensors.add_read_tensor("conv.input")
         self.tensors.add_read_tensor("add")
         self.tensors.add_read_tensor("relu.mask")
         self.tensors.add_read_tensor("bn1.bn_use")
         self.tensors.add_read_tensor("bn2.bn_use")
-        self.tensors.add_write_tensor("conv.weight_grad")
         self.tensors.add_write_tensor("input_grad1")
         self.tensors.add_write_tensor("input_grad2")
     @classmethod

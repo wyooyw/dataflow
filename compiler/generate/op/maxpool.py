@@ -11,7 +11,7 @@ class DualMaxpool(Dual):
                         kernel_size,
                         padding=0,
                         stride=2):
-
+        super().__init__()
         in_batch,in_width,in_height,in_channels = in_shape
 
         forward_attrs = ForwardMaxpoolAttrs(kernel_size=kernel_size,

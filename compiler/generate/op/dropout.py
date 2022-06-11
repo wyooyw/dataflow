@@ -9,6 +9,7 @@ import torch.nn as nn
 
 class DualDropout(Dual):
     def __init__(self,in_shape):
+        super().__init__()
         in_batch,in_features = in_shape
         #定义张量
         mask = MemoryManager().allocActivation(shape=in_shape)

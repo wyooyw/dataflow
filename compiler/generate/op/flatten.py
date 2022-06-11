@@ -6,10 +6,12 @@ from compiler.target_gen.memory.memory_manager import MemoryManager
 from compiler.utils.pointer import Pointer
 from compiler.utils.unique_class_name import unique_class_name
 import torch.nn as nn
-
+import torch
+from simulator.memory import Memory
 
 class DualFlatten(Dual):
     def __init__(self,in_shape):
+        super().__init__()
         in_batch,in_channel,in_height,in_width = in_shape
         out_shape = ForwardFlatten.get_out_shape_by_in_shape(in_shape,None)
         #定义张量
@@ -43,7 +45,7 @@ class DualFlatten(Dual):
 
 class ForwardFlatten(Operator):
     def __init__(self,attrs:ForwardFlattenAttrs,tensors:ForwardFlattenTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.FORWARD_FLATTEN,
+        super().__init__(type=OperatorType.FORWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),
@@ -58,14 +60,27 @@ class ForwardFlatten(Operator):
         assert len(in_shape)==4
         batch,channel,height,width = in_shape
         return (batch,channel * height * width)
+    
+    def sim_run(self):
+        input = self.tensors.get("input")
+        output = self.tensors.get("output")
+
+        input = Memory().get(input.addr)
+        Memory().set(output.addr,torch.flatten(input,1))
         
 
 class BackwardFlatten(Operator):
     def __init__(self,attrs:BackwardFlattenAttrs,tensors:BackwardFlattenTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.BACKWARD_FLATTEN,
+        super().__init__(type=OperatorType.BACKWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),
                         in_shape=in_shape,
                         out_shape=out_shape)
 
+    def sim_run(self):
+        output_grad = self.tensors.get("output_grad")
+        input_grad = self.tensors.get("input_grad")
+
+        output_grad = Memory().get(output_grad.addr)
+        Memory().set(input_grad.addr,output_grad.reshape(input_grad.shape))

@@ -69,8 +69,12 @@ class Converter(object):
                 dual_softmax.forward.connect_successor(dual_entropy.forward,_share_storage=True)
                 dual_last.backward.connect_predecessor(dual_softmax.backward,_share_storage=True)
                 dual_softmax.backward.connect_predecessor(dual_entropy.backward,_share_storage=True)
+                if dual_last.weight_gradient:
+                    dual_last.weight_gradient.connect_predecessor(dual_softmax.backward,_share_storage=True)
 
                 dual_entropy.forward.connect_successor(dual_entropy.backward)
+
+                
             elif node.op=="call_module":
                 flag = False
                 for item in config_call_module:
@@ -78,7 +82,12 @@ class Converter(object):
                     if type(module) == eval(item["old"]):
                         in_shape = self.get_in_shape(node)
                         dual = eval(item["new"]).from_torch_module(in_shape=in_shape,module=module)
-                        self.net.add_operator(dual.forward,dual.backward)
+                        
+                        if dual.weight_gradient:
+                            dual.weight_gradient.connect_successor(dual.weight_update)
+                        dual.backward.connect_successor(dual.weight_update)
+
+                        self.net.add_operator(dual.forward,dual.backward,dual.weight_gradient,dual.weight_update)
                         self.map[node] = dual
                         #加入前驱节点
                         for arg in node.args:
@@ -86,6 +95,8 @@ class Converter(object):
                                 predecessor_dual = self.map[arg]
                                 predecessor_dual.forward.connect_successor(dual.forward,_share_storage=True)
                                 predecessor_dual.backward.connect_predecessor(dual.backward,_share_storage=True)
+                                if predecessor_dual.weight_gradient:
+                                    predecessor_dual.weight_gradient.connect_predecessor(dual.backward,_share_storage=True)
                         if len(node.users)>1:
                             self._add_split(node,in_shape=in_shape)
                         flag = True

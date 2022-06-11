@@ -110,7 +110,7 @@ class MemoryManager(object):
         
         print(f"end at {addr}B = {int(addr/1024*100)/100}KB")
     
-    def tensor_memory_layout2(self,net):
+    def tensor_memory_layout2(self,net,show_image=False,save_image=False):
         """利用求解二维装箱问题来进行内存布局
         """
 
@@ -119,20 +119,35 @@ class MemoryManager(object):
 
         rec_manager = getRectangleManager()
         visit_tensor = set()
+        addr = 0
         for op,tensor_name,tensor in net.all_tensors():
             if tensor in visit_tensor:
                 continue
             if tensor.storage.type==StorageType.WEIGHT:
+                tensor.addr = addr
+                size = tensor.storage.size * 2
+                addr += size
+                visit_tensor.add(tensor)
                 continue
 
             rec = self._make_rectangle(tensor)
             visit_tensor.add(tensor)
+            tensor.rec = rec
             rec_manager.add_rectangle(rec)
             
         memory_max = rec_manager.layout()
         print("memory_max:",memory_max)
-        rec_manager.paint()
-        rec_manager.save()
+        print("weight_size:",addr)
+        if show_image:
+            rec_manager.paint()
+        if save_image:
+            rec_manager.save()
+        max_addr = 0
+        for tensor in visit_tensor:
+            if hasattr(tensor,"rec"):
+                tensor.addr = tensor.rec.y_range[0] + addr
+                max_addr = max(max_addr,tensor.addr+tensor.storage.size*2)
+        print(max_addr,"B")
 
     def _mark_life_time(self,net):
         """为每个张量设定生命周期
@@ -181,7 +196,6 @@ class MemoryManager(object):
             if op.name=="FEdge_0" or op.name=="BEdge_0":
                 continue
             if not op==cur_op:
-                if cur_op.starts
                 if not cur_op==None:
                     print("{}{}{}".format(cur_op.name.ljust(20),
                                 str(cur_read_count).ljust(20),

@@ -9,6 +9,7 @@ import torch.nn as nn
 
 class DualAdd(Dual):
     def __init__(self,in_shape):
+        super().__init__()
         in_batch,in_channels,in_height,in_width = in_shape
 
 
@@ -40,7 +41,7 @@ class DualAdd(Dual):
 
 class ForwardAdd(Operator):
     def __init__(self,attrs:ForwardAddAttrs,tensors:ForwardAddTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.AGGREGATE,
+        super().__init__(type=OperatorType.FORWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),
@@ -54,7 +55,7 @@ class ForwardAdd(Operator):
 
 class BackwardAdd(Operator):
     def __init__(self,attrs:BackwardAddAttrs,tensors:BackwardAddTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.SPLIT,
+        super().__init__(type=OperatorType.BACKWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),

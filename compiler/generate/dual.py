@@ -1,5 +1,9 @@
 class Dual:
     def __init__(self):
+        self.forward = None
+        self.backward = None
+        self.weight_gradient = None
+        self.weight_update = None
         pass
 
     def get_forward(self):

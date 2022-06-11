@@ -7,7 +7,7 @@ from queue import Queue
 from functools import reduce
 class ForwardConvRelu(Operator):
     def __init__(self,conv,relu):
-        super().__init__(type=OperatorType.BACKEND,
+        super().__init__(type=OperatorType.FORWARD,
                         attrs=Attrs(),
                         tensors=OpTensors(),
                         name=unique_class_name(self))

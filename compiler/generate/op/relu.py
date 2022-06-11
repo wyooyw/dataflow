@@ -6,9 +6,12 @@ from compiler.target_gen.memory.memory_manager import MemoryManager
 from compiler.utils.pointer import Pointer
 from compiler.utils.unique_class_name import unique_class_name
 import torch.nn as nn
+import torch
+from simulator.memory import Memory
 
 class DualRelu(Dual):
     def __init__(self,in_shape):
+        super().__init__()
         # in_batch,in_channels,in_height,in_width = in_shape
         #定义张量
         mask = MemoryManager().allocActivation(shape=in_shape)
@@ -44,7 +47,7 @@ class DualRelu(Dual):
 
 class ForwardRelu(Operator):
     def __init__(self,attrs:ForwardReluAttrs,tensors:ForwardReluTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.FORWARD_RELU,
+        super().__init__(type=OperatorType.FORWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),
@@ -58,14 +61,32 @@ class ForwardRelu(Operator):
     @classmethod
     def get_out_shape_by_in_shape(cls,in_shape,attr):
         return in_shape
+    
+    def sim_run(self):
+        input = self.tensors.get("input")
+        output = self.tensors.get("output")
+        mask = self.tensors.get("mask")
+
+        input = Memory().get(input.addr)
+        Memory().set(output.addr,torch.relu(input))
+        Memory().set(mask.addr,input>0)
+
         
 
 class BackwardRelu(Operator):
     def __init__(self,attrs:BackwardReluAttrs,tensors:BackwardReluTensors,in_shape=[],out_shape=[]):
-        super().__init__(type=OperatorType.BACKWARD_RELU,
+        super().__init__(type=OperatorType.BACKWARD,
                         attrs=attrs,
                         tensors=tensors,
                         name=unique_class_name(self),
                         in_shape=in_shape,
                         out_shape=out_shape)
 
+    def sim_run(self):
+        output_grad = self.tensors.get("output_grad")
+        input_grad = self.tensors.get("input_grad")
+        mask = self.tensors.get("mask")
+
+        output_grad = Memory().get(output_grad.addr)
+        mask = Memory().get(mask.addr)
+        Memory().set(input_grad.addr,torch.mul(output_grad,mask))

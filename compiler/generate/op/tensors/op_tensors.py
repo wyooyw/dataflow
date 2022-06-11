@@ -1,5 +1,8 @@
 import collections
 import copy
+def warn(cond,string):
+    if not cond:
+        print(string)
 class OpTensors:
     """算子中使用到的
     """
@@ -15,14 +18,15 @@ class OpTensors:
     
     def add_read_tensor(self,tensor_name):
         assert tensor_name in self.tensors
-        assert tensor_name not in self.read_tensors
-        assert tensor_name not in self.write_tensors
+        warn(tensor_name not in self.read_tensors,f"Tensor {tensor_name} is already in read_tensors")
+        warn(tensor_name not in self.write_tensors,f"Tensor {tensor_name} is already in write_tensors")
+        
         self.read_tensors.add(tensor_name)
     
     def add_write_tensor(self,tensor_name):
         assert tensor_name in self.tensors
-        assert tensor_name not in self.read_tensors
-        assert tensor_name not in self.write_tensors
+        warn(tensor_name not in self.read_tensors,f"Tensor {tensor_name} is already in read_tensors")
+        warn(tensor_name not in self.write_tensors,f"Tensor {tensor_name} is already in write_tensors")
         self.write_tensors.add(tensor_name)
 
     def get_input(self):

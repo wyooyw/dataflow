@@ -7,7 +7,7 @@ from queue import Queue
 from functools import reduce
 class BackwardLinearDropoutRelu(Operator):
     def __init__(self,linear,dropout,relu):
-        super().__init__(type=OperatorType.BACKEND,
+        super().__init__(type=OperatorType.BACKWARD,
                         attrs=Attrs(),
                         tensors=OpTensors(),
                         name=unique_class_name(self))
@@ -17,8 +17,6 @@ class BackwardLinearDropoutRelu(Operator):
 
         self.tensors.set("output_grad",linear.tensors.get("output_grad"))
         self.tensors.set("linear.weight",linear.tensors.get("weight"))
-        self.tensors.set("linear.input",linear.tensors.get("input"))
-        self.tensors.set("linear.weight_grad",linear.tensors.get("weight_grad"))
 
         self.tensors.set("dropout.mask",dropout.tensors.get("mask"))
         self.tensors.set("relu.mask",relu.tensors.get("mask"))
@@ -27,10 +25,8 @@ class BackwardLinearDropoutRelu(Operator):
 
         self.tensors.add_read_tensor("output_grad")
         self.tensors.add_read_tensor("linear.weight")
-        self.tensors.add_read_tensor("linear.input")
         self.tensors.add_read_tensor("relu.mask")
         self.tensors.add_read_tensor("dropout.mask")
-        self.tensors.add_write_tensor("linear.weight_grad")
         self.tensors.add_write_tensor("input_grad")
         
     @classmethod

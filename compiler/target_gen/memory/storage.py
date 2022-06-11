@@ -20,6 +20,7 @@ class Storage:
         self.content = content
         self.name = unique_class_name(self)
         self.ref_tensors = set()
+        self.data = None
 
     def same_as(self,storage):
         for tensor in self.ref_tensors:

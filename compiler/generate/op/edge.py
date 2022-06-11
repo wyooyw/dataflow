@@ -9,6 +9,7 @@ import torch.nn as nn
 
 class DualEdge(Dual):
     def __init__(self,in_shape):
+        super().__init__()
         in_batch,in_channels,in_width,in_height = in_shape
 
         output = MemoryManager().allocActivation(shape=in_shape)

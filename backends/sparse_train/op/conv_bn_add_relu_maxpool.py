@@ -8,7 +8,7 @@ from queue import Queue
 from functools import reduce
 class ForwardConvBnAddReluMaxpool(Operator):
     def __init__(self,conv,bn,add,relu,maxpool):
-        super().__init__(type=OperatorType.BACKEND,
+        super().__init__(type=OperatorType.FORWARD,
                         attrs=Attrs(),
                         tensors=OpTensors(),
                         name=unique_class_name(self))

@@ -1,6 +1,7 @@
 import numpy as np
 from bitarray import bitarray
 import math
+import torch
 def min(*nums):
     """若nums各项为数字,则取所有数字的最小值;若为list,则逐元素取最小值
     """
@@ -46,3 +47,30 @@ def _select_index(n,m):
             tmp.pop()
     dfs(0,0)
     return result
+
+
+
+def padding_inside(tensor,padding=1):
+    """在张量最后两维的内部做padding
+    """
+    if padding==0:
+        return tensor
+    batch,channel,height,width = tensor.shape
+    padding_zeros = torch.zeros(batch,channel,height,width*padding)
+    tensor = torch.cat( (tensor,padding_zeros),3 )
+    tensor = tensor.reshape(batch,channel,height*(padding+1),width)
+
+    tensor = torch.transpose(tensor,2,3)
+    batch,channel,height,width = tensor.shape
+    padding_zeros = torch.zeros(batch,channel,height,width*padding)
+    tensor = torch.cat( (tensor,padding_zeros),3 )
+    tensor = tensor.reshape(batch,channel,height*(padding+1),width)
+    tensor = tensor[:,:,:-padding,:-padding]
+
+    tensor = torch.transpose(tensor,2,3)
+    return tensor
+
+
+if __name__=="__main__":
+    tensor = torch.range(1.0,9.0).reshape(1,1,3,3)
+    print(padding_inside(tensor,1))

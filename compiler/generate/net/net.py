@@ -1,5 +1,7 @@
 import collections
 from queue import Queue
+from simulator.memory import Memory
+import torch
 class Net:
     def __init__(self):
         self.ops = set()
@@ -10,11 +12,12 @@ class Net:
         """添加算子到网络中
         """
         for op in ops:
-            if self.first_op==None:
-                self.first_op = op
-            self.ops.add(op)
-            self.hash[op.name] = op
-            op.net = self
+            if op:
+                if self.first_op==None:
+                    self.first_op = op
+                self.ops.add(op)
+                self.hash[op.name] = op
+                op.net = self
     
     def remove_operator(self,*ops):
         """从网络中删除算子
@@ -23,6 +26,9 @@ class Net:
             self.ops.discard(op)
             self.hash[op.name] = None
             op.net = None
+
+    def get_operator(self,name):
+        return self.hash[name]
     
     def topo(self):
         """按照拓扑序遍历节点
@@ -134,3 +140,32 @@ class Net:
         #         queue.put(suc)
         # return "\n".join(strs)
         # return "\n".join([str(op) for op in self.ops])
+
+    def _sim_run_prepare(self,input):
+        #设置好输入张量
+        Memory().set(self.first_op.tensors.get("output").addr,input)
+        #设置好权重张量
+        visit_tensor = set()
+        for op,tensor_name,tensor in self.all_tensors():
+            if tensor in visit_tensor:
+                continue
+            visit_tensor.add(tensor)
+            if tensor.storage.data is not None:
+                Memory().set(tensor.addr,torch.from_numpy(tensor.storage.data))
+
+    def sim_run(self,input):
+        #准备张量
+        self._sim_run_prepare(input)
+        #执行
+        for op in self.topo():
+            op.sim_run()
+            
+    def sim_run_to(self,input,op_name):
+        #准备张量
+        self._sim_run_prepare(input)
+        #执行
+        for op in self.topo():
+            op.sim_run()
+            if op.name==op_name:
+                break
+        return op
