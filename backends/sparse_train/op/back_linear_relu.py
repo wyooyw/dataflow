@@ -1,6 +1,4 @@
-from compiler.generate.operator import Operator,OperatorType
-from compiler.generate.op.attrs.attrs import Attrs
-from compiler.generate.op.tensors.op_tensors import OpTensors
+from compiler.graph_ir import Operator,OperatorType,Attrs,Tensors
 from compiler.utils.unique_class_name import unique_class_name
 import compiler.utils.utils as utils
 from queue import Queue
@@ -9,7 +7,7 @@ class BackwardLinearRelu(Operator):
     def __init__(self,linear,relu):
         super().__init__(type=OperatorType.BACKWARD,
                         attrs=Attrs(),
-                        tensors=OpTensors(),
+                        tensors=Tensors(),
                         name=unique_class_name(self))
         self.linear = linear
         self.relu = relu

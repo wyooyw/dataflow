@@ -1,6 +1,6 @@
 from compiler.scheduler.scheduler import Scheduler
 from queue import Queue
-from compiler.generate.operator import OperatorType
+from compiler.graph_ir import OperatorType
 class WUImmScheduler(Scheduler):
     """参数立即更新
     """

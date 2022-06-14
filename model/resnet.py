@@ -23,7 +23,6 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes,affine=True)
         self.downsample = downsample
         self.relu2 = nn.ReLU(inplace=False)
-        self.stride = stride
 
     def forward(self, x):
         identity = x
@@ -83,15 +82,15 @@ class ResNet_cifar(nn.Module):
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3,stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64,affine=True)
         self.relu = nn.ReLU(inplace=False)
-        self.layer1 = self._make_layer(block, 64, layers[0], make_index= 0)
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, make_index= 1)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, make_index= 2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, make_index= 3)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.MaxPool2d(4)
         self.fc = nn.Linear(512 * block.expansion, num_classes, bias=False)
         self.flatten = nn.Flatten()
 
-    def _make_layer(self, block, planes, blocks, stride=1, make_index= 0):
+    def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -132,7 +131,4 @@ def resnet18_cifar(num_classes = 10):
     return model
 
 if __name__=="__main__":
-    resnet = resnet18_cifar(num_classes=10)
-    tensor = torch.ones((4,3,32,32))
-    out = resnet(tensor)
-    print(out)
+    print(resnet18_cifar())

@@ -6,21 +6,20 @@ from torch.fx import symbolic_trace,Graph,Node,replace_pattern
 import operator
 from compiler.config.config import Config
 
-from compiler.generate.op.conv import DualConv
-from compiler.generate.op.softmax import DualSoftmax
-from compiler.generate.op.entropy import DualEntropy
-from compiler.generate.op.relu import DualRelu
-from compiler.generate.op.flatten import DualFlatten
-from compiler.generate.op.linear import DualLinear
-from compiler.generate.op.add import DualAdd,BackwardAdd
-from compiler.generate.op.maxpool import DualMaxpool
-from compiler.generate.op.batchnorm import DualBatchnorm
-from compiler.generate.op.edge import DualEdge
-from compiler.generate.op.split import DualSplit,ForwardSplit
-from compiler.generate.op.dropout import DualDropout
+from compiler.graph_ir.operators.conv import DualConv
+from compiler.graph_ir.operators.softmax import DualSoftmax
+from compiler.graph_ir.operators.entropy import DualEntropy
+from compiler.graph_ir.operators.relu import DualRelu
+from compiler.graph_ir.operators.flatten import DualFlatten
+from compiler.graph_ir.operators.linear import DualLinear
+from compiler.graph_ir.operators.add import DualAdd,BackwardAdd
+from compiler.graph_ir.operators.maxpool import DualMaxpool
+from compiler.graph_ir.operators.batchnorm import DualBatchnorm
+from compiler.graph_ir.operators.edge import DualEdge
+from compiler.graph_ir.operators.split import DualSplit,ForwardSplit
+from compiler.graph_ir.operators.dropout import DualDropout
 
-# from compiler.generate.op import *
-from compiler.generate.net.net import Net
+from compiler.graph_ir import Net
 
 class Converter(object):
     """将pytorch模型转换为sparsetrain-IR

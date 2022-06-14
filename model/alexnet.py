@@ -51,3 +51,7 @@ class AlexNet(nn.Module):
         x = self.relu7(x)
         x = self.line8(x)
         return x
+if __name__=="__main__":
+    print(AlexNet())
+    # from torchinfo import summary
+    # summary(AlexNet(), input_size=(4, 3, 32, 32))

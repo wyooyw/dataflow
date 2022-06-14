@@ -1,0 +1,58 @@
+Date : 2022-06-13 11:43:09
+Directory : d:\Project\dataflow
+Total : 22 files,  256 codes, -19 comments, 2 blanks, all 239 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Python   |         18 |        235 |        -19 |          1 |        217 |
+| YAML     |          4 |         21 |          0 |          1 |         22 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                      | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                         |         22 |        256 |        -19 |          2 |        239 |
+| backends                                                                                  |         12 |        217 |          6 |         14 |        237 |
+| backends\sparse_train                                                                     |         12 |        217 |          6 |         14 |        237 |
+| backends\sparse_train\op                                                                  |          8 |        196 |          6 |         13 |        215 |
+| backends\sparse_train\target_code                                                         |          3 |         14 |          0 |          1 |         15 |
+| compiler                                                                                  |          7 |         76 |         14 |          0 |         90 |
+| compiler\generate                                                                         |          4 |        121 |         18 |          5 |        144 |
+| compiler\generate\net                                                                     |          1 |          5 |          0 |          0 |          5 |
+| compiler\generate\op                                                                      |          2 |        135 |          0 |          5 |        140 |
+| compiler\target_gen                                                                       |          3 |        -45 |         -4 |         -5 |        -54 |
+| compiler\target_gen\memory                                                                |          3 |        -45 |         -4 |         -5 |        -54 |
+| model                                                                                     |          2 |         -2 |          2 |         -1 |         -1 |
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                  | language | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| d:\Project\dataflow\backends\sparse_train\op\__init__.py                                  | Python   |          1 |          0 |          0 |          1 |
+| d:\Project\dataflow\backends\sparse_train\op\back_conv.py                                 | Python   |         21 |          0 |          1 |         22 |
+| d:\Project\dataflow\backends\sparse_train\op\back_conv_relu.py                            | Python   |         22 |          0 |          1 |         23 |
+| d:\Project\dataflow\backends\sparse_train\op\back_conv_relu_bn.py                         | Python   |         23 |          0 |          1 |         24 |
+| d:\Project\dataflow\backends\sparse_train\op\back_conv_split_relu_bn.py                   | Python   |         22 |          1 |          0 |         23 |
+| d:\Project\dataflow\backends\sparse_train\op\back_conv_split_relu_bn_bn.py                | Python   |         22 |          1 |          0 |         23 |
+| d:\Project\dataflow\backends\sparse_train\op\back_linear_maxpool_relu_add_bn.py           | Python   |         37 |          2 |          5 |         44 |
+| d:\Project\dataflow\backends\sparse_train\op\linear_softmax_entropy.py                    | Python   |         48 |          2 |          5 |         55 |
+| d:\Project\dataflow\backends\sparse_train\replace.yaml                                    | YAML     |          7 |          0 |          0 |          7 |
+| d:\Project\dataflow\backends\sparse_train\target_code\structure_info.yaml                 | YAML     |          4 |          0 |          1 |          5 |
+| d:\Project\dataflow\backends\sparse_train\target_code\structure_info_weight_gradient.yaml | YAML     |          6 |          0 |          0 |          6 |
+| d:\Project\dataflow\backends\sparse_train\target_code\structure_info_weight_update.yaml   | YAML     |          4 |          0 |          0 |          4 |
+| d:\Project\dataflow\compiler\generate\net\net.py                                          | Python   |          5 |          0 |          0 |          5 |
+| d:\Project\dataflow\compiler\generate\op\conv.py                                          | Python   |         58 |          0 |          3 |         61 |
+| d:\Project\dataflow\compiler\generate\op\linear.py                                        | Python   |         77 |          0 |          2 |         79 |
+| d:\Project\dataflow\compiler\generate\operator.py                                         | Python   |        -19 |         18 |          0 |         -1 |
+| d:\Project\dataflow\compiler\target_gen\memory\mem_operator.py                            | Python   |         -9 |         -4 |         -2 |        -15 |
+| d:\Project\dataflow\compiler\target_gen\memory\memory_manager.py                          | Python   |        -32 |          0 |         -1 |        -33 |
+| d:\Project\dataflow\compiler\target_gen\memory\net.py                                     | Python   |         -4 |          0 |         -2 |         -6 |
+| d:\Project\dataflow\model\alexnet.py                                                      | Python   |          2 |          2 |          0 |          4 |
+| d:\Project\dataflow\model\resnet.py                                                       | Python   |         -4 |          0 |         -1 |         -5 |
+| d:\Project\dataflow\test.py                                                               | Python   |        -35 |        -41 |        -11 |        -87 |
+| Total                                                                                     |          |        256 |        -19 |          2 |        239 |
++-------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+

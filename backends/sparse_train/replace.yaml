@@ -68,6 +68,13 @@
   - ForwardLinear
   - ForwardRelu
   replace: ForwardLinearRelu
+- pattern:
+  - ForwardLinear
+  - ForwardSoftmax
+  - ForwardEntropy
+  - BackwardEntropy
+  - BackwardSoftmax
+  replace: ForwardLinearSoftmaxEntropy
 
 - pattern:
   - BackwardConv

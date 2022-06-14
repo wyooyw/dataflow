@@ -83,7 +83,7 @@ class Backward{{title}}Attrs(Attrs):
         self.attrs["{{attr}}"] = {{attr}}
         {% endfor %}
 
-class Forward{{title}}Tensors(OpTensors):
+class Forward{{title}}Tensors(Tensors):
     """前传{{title}}算子 用到的张量
     """
     def __init__(self,{% for tensor in op.forward.tensors -%}
@@ -96,7 +96,7 @@ class Forward{{title}}Tensors(OpTensors):
         self.input = [{% for input in op.forward.input %}"{{input}}",{% endfor %}]
         self.output = [{% for output in op.forward.output %}"{{output}}",{% endfor %}]
 
-class Backward{{title}}Tensors(OpTensors):
+class Backward{{title}}Tensors(Tensors):
     """反传{{title}}算子 用到的张量
     """
     def __init__(self,{% for tensor in op.backward.tensors -%}

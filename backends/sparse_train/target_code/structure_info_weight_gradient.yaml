@@ -1,0 +1,6 @@
+- name: output_grad
+  long: 9
+- name: input
+  long: 9
+- name: weight_grad
+  long: 9

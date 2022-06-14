@@ -1,6 +1,4 @@
-from compiler.generate.operator import Operator,OperatorType
-from compiler.generate.op.attrs.attrs import Attrs
-from compiler.generate.op.tensors.op_tensors import OpTensors
+from compiler.graph_ir import Operator,OperatorType,Attrs,Tensors
 from compiler.utils.unique_class_name import unique_class_name
 from backends.sparse_train.target_code.instruction import Instruction
 from compiler.utils.utils import int_to_bits
@@ -10,7 +8,7 @@ class ForwardConvBn(Operator):
     def __init__(self,conv,bn):
         super().__init__(type=OperatorType.FORWARD,
                         attrs=Attrs(),
-                        tensors=OpTensors(),
+                        tensors=Tensors(),
                         name=unique_class_name(self))
         self.conv = conv
         self.bn = bn
@@ -39,7 +37,7 @@ class ForwardConvBn(Operator):
             "bn": True,
             "part_sum": False,
             "softmax": False
-        })
+        },pad_to=128)
         instruction.set("in_feature", int_to_bits(self.tensors.get("input").index,9).to01(),use_bits=True)
         instruction.set("weight", int_to_bits(self.tensors.get("conv.weight").index,9).to01(),use_bits=True)
         instruction.set("bn_use", int_to_bits(self.tensors.get("bn.bn_use").index,9).to01(),use_bits=True)

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MaxNLocator
 import random
+from matplotlib.animation import FuncAnimation,PillowWriter
 
 class Rectangle:
     def __init__(self,x_range,height,color,tensor=None):
@@ -57,6 +58,7 @@ class RectangleManager:
         self.rectangle_list = []
         self.rectangle_opt_list = []
         self.rectangle_fix_list = []
+        self.put_sequence = []
         self.x_max = 0
         self.y_max = 0
         self.painter = RectanglePainter()
@@ -162,11 +164,80 @@ class RectangleManager:
         self.painter.set_lim(x_lim=(0,self.x_max+1), y_lim=(0,max(self.y_max+1,39172000)))
         self.painter.save(self.name)
 
+    def animate(self):
+        y_max = max(self.y_max,39172000)
+        x_max = self.x_max
+        fig = plt.figure()
+        plt.xlim(0,x_max)
+        plt.ylim(0,y_max)
+        block_seq = []
+        finish_block = set()
+        # state = []#0:未开始；1：正在下落；2：完全露出
+        for rec in self.put_sequence:
+            block = plt.gca().add_patch(plt.Rectangle(xy=(rec.x_range[0],rec.y_range[0]+y_max),
+                                        width=rec.x_range[1]-rec.x_range[0], 
+                                        height=rec.y_range[1]-rec.y_range[0],
+                                        edgecolor=self.painter.color[rec.color],
+                                        fill=False, linewidth=1))
+            block_seq.append(block)
+            # state.append(0)
+        last_block = None
+        def speed(y,ground):
+            delta = y-ground
+            # if delta > 268435456:
+            #     return 268435456#2^28
+            if delta > 4194304:
+                return 4194304#2^22
+            elif delta > 1048576:
+                return 1048576#2^20
+            elif delta > 65536:
+                return 65536#2^16
+            elif delta > 4096:
+                return 4096#2^12
+            elif delta > 256:
+                return 256#2^8
+            elif delta > 64:
+                return 64#2^4
+            elif delta > 32:
+                return 32#2^4
+            elif delta > 16:
+                return 16#2^4
+            elif delta > 8:
+                return 8#2^4
+            elif delta > 4:
+                return 4#2^4
+            else:
+                return 1#2^0
+        wait = 50
+        def update(i):  #帧更新函数
+            change_block = []
+            if i<wait:
+                return change_block
+            for idx,block in enumerate(block_seq):
+                if idx > i-wait:
+                    break
+                if block in finish_block:
+                    continue
+                y_ground = self.put_sequence[idx].y_range[0]
+                y = block.get_y()
+                if y <= y_ground:
+                    finish_block.add(block)
+                    continue
+                # if last_block and y_max-last_block.get_y()<last_block.get_height():
+                #     continue
+                block.set(xy=(block.get_x(),y-speed(y,y_ground)))
+                change_block.append(block)
+            return change_block
+        ani=FuncAnimation(fig,update,interval=50)
+        plt.show()
+        # writer = PillowWriter(fps=10, bitrate=36)
+        # ani.save("movie.gif", writer=writer)
+
 def getRectangleManager():
-    manager = RectangleManagerOrigin()
+    # manager = RectangleManagerOrigin()
     # manager = RectangleManagerSimpleReuse()
     # manager = RectangleManagerWeightUpdateImm()
-    # manager = RectangleManagerRandomSmall()
+    manager = RectangleManagerRandomSmall()
     return manager
 
 class RectangleManagerOrigin(RectangleManager):
@@ -190,7 +261,7 @@ class RectangleManagerOrigin(RectangleManager):
 
         ground = [0]*(self.x_max+1)
 
-        def put_rec(rec):
+        def put_rec(rec,put_sequence=True):
             x_range = rec.x_range
             height = rec.height
             ground_max = self.max(ground,x_range[0],x_range[1])
@@ -198,6 +269,8 @@ class RectangleManagerOrigin(RectangleManager):
             for i in range(x_range[0],x_range[1]):
                 ground[i] = ground_new_height
             rec.y_range = [ground_max,ground_new_height]
+            if put_sequence:
+                self.put_sequence.append(rec)
             return ground_new_height
 
         #先放feature
@@ -245,7 +318,7 @@ class RectangleManagerSimpleReuse(RectangleManager):
 
         ground = [0]*(self.x_max+1)
 
-        def put_rec(rec):
+        def put_rec(rec,put_sequence=True):
             x_range = rec.x_range
             height = rec.height
             ground_max = self.max(ground,x_range[0],x_range[1])
@@ -253,6 +326,8 @@ class RectangleManagerSimpleReuse(RectangleManager):
             for i in range(x_range[0],x_range[1]):
                 ground[i] = ground_new_height
             rec.y_range = [ground_max,ground_new_height]
+            if put_sequence:
+                self.put_sequence.append(rec)
             return ground_new_height
 
         #先放feature
@@ -344,7 +419,7 @@ class RectangleManagerRandomSmall(RectangleManager):
 
         ground = [0]*(self.x_max+1)
 
-        def put_rec(rec):
+        def put_rec(rec,put_sequence=True):
             x_range = rec.x_range
             height = rec.height
             ground_max = self.max(ground,x_range[0],x_range[1])
@@ -352,6 +427,8 @@ class RectangleManagerRandomSmall(RectangleManager):
             for i in range(x_range[0],x_range[1]):
                 ground[i] = ground_new_height
             rec.y_range = [ground_max,ground_new_height]
+            if put_sequence:
+                self.put_sequence.append(rec)
             return ground_new_height
 
         #先放feature
@@ -372,7 +449,7 @@ class RectangleManagerRandomSmall(RectangleManager):
             y_max_tmp = self.y_max
             random.shuffle(life_short_list)
             for rec in life_short_list:
-                new_height = put_rec(rec)
+                new_height = put_rec(rec,put_sequence=False)
                 y_max_tmp = max(y_max_tmp,new_height)
             print(f"min:{min_height}, got:{y_max_tmp}")
             if y_max_tmp<min_height:

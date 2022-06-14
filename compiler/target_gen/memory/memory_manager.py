@@ -1,10 +1,7 @@
 from compiler.utils.singleton import singleton
 from compiler.utils.rectangle import Rectangle,RectangleManager,getRectangleManager
-from compiler.target_gen.memory.net import Net
-from compiler.target_gen.memory.mem_operator import MemOperator
 from compiler.target_gen.memory.storage import Storage,StorageType
 from compiler.target_gen.memory.tensor import Tensor
-from compiler.target_gen.memory.segment import Segment,SegmentType
 
 from functools import reduce
 import collections
@@ -14,14 +11,6 @@ class MemoryManager(object):
     def __init__(self):
         # self.net = Net()
         self.tensor_list = []
-        self.segments = {
-            SegmentType.WEIGHT_STORAGE:Segment(type=SegmentType.WEIGHT_STORAGE),
-            SegmentType.ACTIVATION_STORAGE:Segment(type=SegmentType.ACTIVATION_STORAGE),
-            SegmentType.GRAD_STORAGE:Segment(type=SegmentType.GRAD_STORAGE),
-            SegmentType.TENSOR:Segment(type=SegmentType.TENSOR),
-            SegmentType.OPERATOR:Segment(type=SegmentType.OPERATOR),
-            SegmentType.NET:Segment(type=SegmentType.NET)
-        }
         self.alloc_num = 0
         pass
 
@@ -38,48 +27,26 @@ class MemoryManager(object):
     
     def allocTensor(self,
                     shape,
-                    storage_segment:Segment,
                     type,
                     content=None):
         size = reduce(lambda x, y: x*y, shape)
         storage = Storage(size=size,content=content,type=type)
         tensor = Tensor(storage=storage,shape=shape)
         self.tensor_list.append(tensor)
-        storage_segment.size += size
 
-        tensor_segment = self.segments[SegmentType.TENSOR]
-        ndim = len(shape)
-        tensor_segment.size += 1 + ndim + 1 #1:ndim; ndim:shape; 1:storage_addr
         return tensor
 
     def allocWeight(self,shape,content=None):
-        segment = self.segments[SegmentType.WEIGHT_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.WEIGHT,content=content)
+        return self.allocTensor(shape=shape,type=StorageType.WEIGHT,content=content)
     
     def allocActivation(self,shape,content=None):
-        segment = self.segments[SegmentType.ACTIVATION_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.ACTIVATION,content=content)
+        return self.allocTensor(shape=shape,type=StorageType.ACTIVATION,content=content)
     
     def allocWeightGrad(self,shape,content=None):
-        segment = self.segments[SegmentType.GRAD_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.WEIGHT_GRAD,content=content)
+        return self.allocTensor(shape=shape,type=StorageType.WEIGHT_GRAD,content=content)
 
     def allocFeatureGrad(self,shape,content=None):
-        segment = self.segments[SegmentType.GRAD_STORAGE]
-        return self.allocTensor(storage_segment=segment,shape=shape,type=StorageType.FEATURE_GRAD,content=content)
-    
-    def calcBases(self):
-        self.segments[SegmentType.WEIGHT_STORAGE].base = 0
-        self.segments[SegmentType.ACTIVATION_STORAGE].base = self.segments[SegmentType.WEIGHT_STORAGE].base + \
-                                                                self.segments[SegmentType.WEIGHT_STORAGE].size
-        self.segments[SegmentType.GRAD_STORAGE].base = self.segments[SegmentType.ACTIVATION_STORAGE].base + \
-                                                                self.segments[SegmentType.ACTIVATION_STORAGE].size
-        self.segments[SegmentType.TENSOR].base = self.segments[SegmentType.GRAD_STORAGE].base + \
-                                                                self.segments[SegmentType.GRAD_STORAGE].size
-        self.segments[SegmentType.OPERATOR].base = self.segments[SegmentType.TENSOR].base + \
-                                                                self.segments[SegmentType.TENSOR].size
-        self.segments[SegmentType.NET].base = self.segments[SegmentType.OPERATOR].base + \
-                                                                self.segments[SegmentType.OPERATOR].size
+        return self.allocTensor(shape=shape,type=StorageType.FEATURE_GRAD,content=content)
     
     def memory_layout(self,net):
         """内存布局规划
@@ -139,7 +106,8 @@ class MemoryManager(object):
         print("memory_max:",memory_max)
         print("weight_size:",addr)
         if show_image:
-            rec_manager.paint()
+            rec_manager.animate()
+            # rec_manager.paint()
         if save_image:
             rec_manager.save()
         max_addr = 0
@@ -210,7 +178,8 @@ class MemoryManager(object):
                 write_count += tensor.storage.size
                 cur_write_count += tensor.storage.size
             else:
-                assert False,f"A tensor not is not be read or write!{op.name},{tensor_name}"
+                pass
+                #assert False,f"A tensor not is not be read or write!{op.name},{tensor_name}"
         print("{}{}{}".format(cur_op.name.ljust(20),
                                 str(cur_read_count).ljust(20),
                                 str(cur_write_count).ljust(20)))

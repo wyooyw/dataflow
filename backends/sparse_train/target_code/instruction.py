@@ -21,7 +21,7 @@ class Instruction(object):
             assert len(value)==self.config[key]["long"],f"{key}.long={self.config[key]['long']},but got {len(value)}"
             self.data[key] = value
         else:
-            assert value in self.alias_to_value[key],f"Alias is not find : {value}"
+            assert value in self.alias_to_value[key],f"Alias is not find : ket={key},value={value}"
             self.data[key] = self.alias_to_value[key][value]
     
     def get(self,key,use_bits=False):

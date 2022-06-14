@@ -7,6 +7,7 @@ from backends.sparse_train.op.back_conv_split_relu_bn import BackwardConvSplitRe
 from backends.sparse_train.op.conv_relu_bn_bn import ForwardConvReluBnBn
 from backends.sparse_train.op.back_conv_split_relu_bn_bn import BackwardConvSplitReluBnBn
 from backends.sparse_train.op.back_conv import BackwardSTConv
+from backends.sparse_train.op.linear_softmax_entropy import ForwardLinearSoftmaxEntropy
 
 #AlexNet中用到的
 from backends.sparse_train.op.conv_relu import ForwardConvRelu

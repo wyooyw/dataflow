@@ -102,7 +102,7 @@ class BackwardConvAttrs(Attrs):
         self.attrs["padding"] = padding
         
 
-class ForwardConvTensors(OpTensors):
+class ForwardConvTensors(Tensors):
     """前传Conv算子 用到的张量
     """
     def __init__(self,weight,
@@ -117,7 +117,7 @@ class ForwardConvTensors(OpTensors):
         self.input = ["input",]
         self.output = ["output",]
 
-class BackwardConvTensors(OpTensors):
+class BackwardConvTensors(Tensors):
     """反传Conv算子 用到的张量
     """
     def __init__(self,weight,
@@ -210,7 +210,7 @@ class BackwardReluAttrs(Attrs):
         super().__init__()
         
 
-class ForwardReluTensors(OpTensors):
+class ForwardReluTensors(Tensors):
     """前传Relu算子 用到的张量
     """
     def __init__(self,mask,
@@ -225,7 +225,7 @@ class ForwardReluTensors(OpTensors):
         self.input = ["input",]
         self.output = ["output",]
 
-class BackwardReluTensors(OpTensors):
+class BackwardReluTensors(Tensors):
     """反传Relu算子 用到的张量
     """
     def __init__(self,mask,
@@ -334,7 +334,7 @@ class BackwardLinearAttrs(Attrs):
         self.attrs["out_features"] = out_features
         
 
-class ForwardLinearTensors(OpTensors):
+class ForwardLinearTensors(Tensors):
     """前传Linear算子 用到的张量
     """
     def __init__(self,input,
@@ -349,7 +349,7 @@ class ForwardLinearTensors(OpTensors):
         self.input = ["input",]
         self.output = ["output",]
 
-class BackwardLinearTensors(OpTensors):
+class BackwardLinearTensors(Tensors):
     """反传Linear算子 用到的张量
     """
     def __init__(self,input_grad,
