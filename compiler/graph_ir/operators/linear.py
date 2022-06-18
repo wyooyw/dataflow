@@ -62,7 +62,7 @@ class DualLinear(Dual):
         dual = DualLinear(in_shape=in_shape,
                         in_features=module.in_features,
                         out_features=module.out_features)
-        dual.forward.get_tensors().tensors["weight"].storage.data = module.weight.detach().numpy()
+        dual.forward.get_tensors().tensors["weight"].storage.data = module.weight.detach()
         return dual
 
 class ForwardLinear(Operator):
@@ -83,18 +83,7 @@ class ForwardLinear(Operator):
         out_shape = (batch,attr.get("out_features"))
         return out_shape
     
-    def sim_run(self):
-        out_features = self.attrs.get("out_features")
-        in_features = self.attrs.get("in_features")
-        input = self.tensors.get("input")
-        weight = self.tensors.get("weight")
-        output = self.tensors.get("output")
-
-        input = Memory().get(input.addr)
-        weight = Memory().get(weight.addr)
-        linear = nn.Linear(in_features,out_features,bias=False)
-        linear.weight = torch.nn.Parameter(weight)
-        Memory().set(output.addr,linear(input).detach())
+    
 
     def to_instr(self):
         instruction = Instruction(name=self.name, init_data={
@@ -127,16 +116,7 @@ class BackwardLinear(Operator):
                         in_shape=in_shape,
                         out_shape=out_shape)
 
-    def sim_run(self):
-        weight = self.tensors.get("weight")
-        output_grad = self.tensors.get("output_grad")
-        input_grad = self.tensors.get("input_grad")
-
-        weight = Memory().get(weight.addr)
-        output_grad = Memory().get(output_grad.addr)
-        # output_grad = torch.transpose(output_grad,0,1)
-
-        Memory().set(input_grad.addr,torch.matmul(output_grad,weight))
+    
     def to_instr(self):
         instruction = Instruction(name=self.name,init_data={
             "net_type":"resnet",

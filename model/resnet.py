@@ -1,10 +1,15 @@
 import torch.nn as nn
 import torch
+
+class Nop(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self,x):
+        return x
+
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,padding=1, bias=False)
-
-
 
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
@@ -94,7 +99,9 @@ class ResNet_cifar(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
+                Nop(),
                 conv1x1(self.inplanes, planes * block.expansion, stride),
+                Nop(),
                 nn.BatchNorm2d(planes * block.expansion,affine=True),
             )
 

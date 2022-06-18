@@ -1,9 +1,6 @@
 from enum import Enum
 from compiler.utils import unique_class_name
-# class StorageType(Enum):
-#     WEIGHT=0
-#     ACTIVATION=1
-#     GRAD=2
+
 class StorageType:
     WEIGHT="WEIGHT"
     ACTIVATION="ACTIVATION"

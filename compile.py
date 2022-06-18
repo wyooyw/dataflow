@@ -3,7 +3,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 
 from compiler.target_gen.memory.memory_manager import MemoryManager
-# from compiler.graph_ir.operator.batchnorm import ForwardBatchnorm,BackwardBatchnorm
+from compiler.graph_ir.operators.batchnorm import ForwardBatchnorm,BackwardBatchnorm
 from compiler.scheduler.normal_scheduler import NormalScheduler
 from compiler.scheduler.wu_imm_scheduler import WUImmScheduler
 from simulator.memory import Memory
@@ -32,27 +32,27 @@ def run():
     
     #将BN算子的avg,std,alpha,beta合并成一个tensor
     #编译器里不好实现，这里hack一下
-    # tmp = {}
-    # for op in net.topo():
-    #     if type(op)==ForwardBatchnorm or type(op)==BackwardBatchnorm:
-    #         avg_storage = op.tensors.get("avg").storage
-    #         if avg_storage in tmp:
-    #             bn_use = tmp[avg_storage]
-    #         else:
-    #             bn_use = MemoryManager().allocWeight((4,op.tensors.get("avg").shape[0]))
-    #             avg_data = op.tensors.get("avg").storage.data
-    #             std_data = op.tensors.get("std").storage.data
-    #             alpha_data = op.tensors.get("alpha").storage.data
-    #             beta_data = op.tensors.get("beta").storage.data
-    #             bn_use_data = np.vstack((avg_data,std_data,alpha_data,beta_data))
-    #             bn_use.storage.data = bn_use_data
-    #             tmp[avg_storage] = bn_use
-    #         op.tensors.set("bn_use",bn_use)
-    #         op.tensors.add_read_tensor("bn_use")
-    #         op.tensors.tensors.pop("avg")
-    #         op.tensors.tensors.pop("std")
-    #         op.tensors.tensors.pop("alpha")
-    #         op.tensors.tensors.pop("beta")
+    tmp = {}
+    for op in net.topo():
+        if type(op)==ForwardBatchnorm or type(op)==BackwardBatchnorm:
+            avg_storage = op.tensors.get("avg").storage
+            if avg_storage in tmp:
+                bn_use = tmp[avg_storage]
+            else:
+                bn_use = MemoryManager().allocWeight((4,op.tensors.get("avg").shape[0]))
+                avg_data = op.tensors.get("avg").storage.data
+                std_data = op.tensors.get("std").storage.data
+                alpha_data = op.tensors.get("alpha").storage.data
+                beta_data = op.tensors.get("beta").storage.data
+                bn_use_data = np.vstack((avg_data,std_data,alpha_data,beta_data))
+                bn_use.storage.data = bn_use_data
+                tmp[avg_storage] = bn_use
+            op.tensors.set("bn_use",bn_use)
+            op.tensors.add_read_tensor("bn_use")
+            op.tensors.tensors.pop("avg")
+            op.tensors.tensors.pop("std")
+            op.tensors.tensors.pop("alpha")
+            op.tensors.tensors.pop("beta")
     print("======================== Net =========================")
     print(net)
 

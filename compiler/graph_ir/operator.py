@@ -3,8 +3,8 @@ import copy
 from orderedset import OrderedSet
 import collections
 import copy
-
-
+import torch
+from compiler.target_gen.memory.tensor import Tensor
 class Attrs:
     """维护算子中使用到的属性
     """
@@ -73,6 +73,7 @@ class Tensors:
         return self.tensors[key]
     
     def set(self,key,value):
+        assert type(value)==Tensor
         self.tensors[key] = value
 
     def __copy__(self):
@@ -88,6 +89,17 @@ class Tensors:
         copy_self.input_idx = self.input_idx
         copy_self.op = self.op
         return copy_self
+
+    def get_data(self,key):
+        data = self.get(key).storage.data
+        assert type(data)==torch.Tensor,f"Type of data should be torch.Tensor,but got {type(data)}"
+        return data
+    
+    def set_data(self,key,data):
+        assert type(data)==torch.Tensor,f"Type of data should be torch.Tensor,but got {type(data)}."
+        tensor = self.get(key)
+        assert list(tensor.shape)==list(data.shape),f"Shape of data should be {tensor.shape}, but got {data.shape}."
+        tensor.storage.data = data
         
 
 
@@ -226,7 +238,8 @@ class Operator:
         input_names = [op.name for op in self.predecessor]
         output_names = [op.name for op in self.successor]
         is_backend = '*' if self.type==OperatorType.BACKEND else ''
-        return f"{is_backend}{self.name},(predecessor={input_names}, successor={output_names}),in_shape={self.in_shape},out_shape={self.out_shape}"
+        is_mul_std = '$ ' if hasattr(self,"_mul_std") and self._mul_std==True else ''
+        return f"{is_mul_std}{is_backend}{self.name},(predecessor={input_names}, successor={output_names}),in_shape={self.in_shape},out_shape={self.out_shape}"
 
     def __copy__(self):
         """复制算子

@@ -12,6 +12,8 @@ from compiler.graph_ir.operators.split import DualSplit,ForwardSplit,BackwardSpl
 from compiler.graph_ir.operators.batchnorm import DualBatchnorm,ForwardBatchnorm,BackwardBatchnorm
 from compiler.graph_ir.operators.maxpool import DualMaxpool,ForwardMaxpool,BackwardMaxpool
 from compiler.graph_ir.operators.dropout import DualDropout,ForwardDropout,BackwardDropout
+from task.ppu.ppu_fused_op import ForwardPPUFusedOp,BackwardPPUFusedOp,CrossEntropyLoss
+from task.ppu.op.scalar_add import BackwardScalarAdd
 from backends.sparse_train.op import *
 from functools import reduce
 

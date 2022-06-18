@@ -70,6 +70,9 @@ def padding_inside(tensor,padding=1):
     tensor = torch.transpose(tensor,2,3)
     return tensor
 
+def str_title(title,long=80):
+    return "{} {} {}".format("="*((long-len(title))//2),title,"="*((long-len(title))//2))
+
 
 if __name__=="__main__":
     tensor = torch.range(1.0,9.0).reshape(1,1,3,3)

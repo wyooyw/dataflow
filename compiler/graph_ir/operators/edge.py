@@ -1,5 +1,5 @@
 from compiler.graph_ir import Dual,Operator,OperatorType,Attrs
-from compiler.graph_ir.attrs.edge_attrs import *
+from compiler.graph_ir.attrs import *
 from compiler.graph_ir.tensors.edge_tensors import *
 from compiler.target_gen.memory.memory_manager import MemoryManager
 from compiler.utils.pointer import Pointer

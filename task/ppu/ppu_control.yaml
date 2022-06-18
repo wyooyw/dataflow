@@ -1,0 +1,68 @@
+#BN模块
+- name: bn_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+- name: bn_direct
+  long: 1
+  terms:
+    "0": forward
+    "1": backward
+- name: bn_double_en
+  long: 1
+  terms:
+    "0": single
+    "1": double
+- name: bn_finish
+  long: 16
+#act模块
+- name: act_fwd_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+- name: act_bp_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+#ResAcc模块
+- name: ResAcc_fwd_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+- name: ResAcc_bp_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+- name: ResAcc_bp_finish
+  long: 16
+- name: ResAcc_bp_single_line_en
+  long: 1
+  terms:
+    "0": double
+    "1": single
+#Pooling模块
+- name: pooling_fwd_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+- name: pooling_fwd_mode
+  long: 1
+  terms:
+    "0": 2
+    "1": 4
+- name: pooling_bp_en
+  long: 1
+  terms:
+    "0": bypass
+    "1": enable
+- name: pooling_bp_mode
+  long: 1
+  terms:
+    "0": 2
+    "1": 4

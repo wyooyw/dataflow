@@ -60,26 +60,26 @@ class Instruction(object):
 
     def __str__(self):
         strs = ["\n"]
-        title = f"Structure info of {self.name}"
-        strs.append("{} {} {}".format("="*((80-len(title))//2),title,"="*((80-len(title))//2)))
-        strs.append("{}{}{}{}".format("name".ljust(20),
+        title = f"Config of {self.name}"
+        strs.append("{} {} {}".format("="*((90-len(title))//2),title,"="*((90-len(title))//2)))
+        strs.append("{}{}{}{}".format("name".ljust(30),
                                         "long".ljust(20),
                                         "value".ljust(20),
                                         "value_alias".ljust(20)))
-        strs.append("-"*80)
+        strs.append("-"*90)
         total_length = 0
         for name,_long,value,alias in self.iter():
             total_length += _long
-            strs.append("{}{}{}{}".format(name.ljust(20),
+            strs.append("{}{}{}{}".format(name.ljust(30),
                                         str(_long).ljust(20),
                                         str(value).ljust(20),
                                         str(alias).ljust(20)))
         strs.append("-"*80)
         bits = self.export()
-        strs.append("{}{}".format("length:".ljust(20),total_length))
-        strs.append("{}{}".format("length after pad:".ljust(20),self.pad_to))
+        strs.append("{}{}".format("length:".ljust(30),total_length))
+        strs.append("{}{}".format("length after pad:".ljust(30),self.pad_to))
         strs.append(self.export().to01())
-        strs.append("="*80)
+        strs.append("="*90)
         return "\n".join(strs)
 
     def init_config(self,path):

@@ -56,12 +56,12 @@ class ForwardEntropy(Operator):
     def get_out_shape_by_in_shape(cls,in_shape,attr):
         return [1]
     
-    def sim_run(self):
-        input = self.tensors.get("input")
-        loss = self.tensors.get("loss")
+    # def sim_run(self):
+    #     input = self.tensors.get("input")
+    #     loss = self.tensors.get("loss")
 
-        input = Memory().get(input.addr)
-        Memory().set(loss.addr,torch.sum(input))
+    #     input = Memory().get(input.addr)
+    #     Memory().set(loss.addr,torch.sum(input))
 
 class BackwardEntropy(Operator):
     def __init__(self,attrs:BackwardEntropyAttrs,tensors:BackwardEntropyTensors,in_shape=[],out_shape=[]):
@@ -72,9 +72,9 @@ class BackwardEntropy(Operator):
                         in_shape=in_shape,
                         out_shape=out_shape)
 
-    def sim_run(self):
-        loss = self.tensors.get("loss")
-        input_grad = self.tensors.get("input_grad")
+    # def sim_run(self):
+    #     loss = self.tensors.get("loss")
+    #     input_grad = self.tensors.get("input_grad")
 
-        loss = Memory().get(loss.addr)
-        Memory().set(input_grad.addr,torch.ones(input_grad.shape)*1.00)
+    #     loss = Memory().get(loss.addr)
+    #     Memory().set(input_grad.addr,torch.ones(input_grad.shape)*1.00)

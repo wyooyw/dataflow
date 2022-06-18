@@ -174,3 +174,25 @@ class Net:
             if op.name==op_name:
                 break
         return op
+
+    def statistic_op(self):
+        print("-------- Operator statistic --------")
+        table = {}
+        for op in self.topo():
+            class_name = type(op).__name__
+            if class_name in table:
+                table[class_name] += 1
+            else:
+                table[class_name] = 1
+        for name,count in table.items():
+            print(f"{name}: {count}")
+        print("----------------------------------")
+        return table
+
+    def deal_input_data(self):
+        self.input = self.get_operator("FEdge_0").tensors.get("output")
+        self.label = self.get_operator("FEntropy_0").tensors.get("label")
+    
+    def apply(self,fn):
+        for op in self.topo():
+            fn(op)

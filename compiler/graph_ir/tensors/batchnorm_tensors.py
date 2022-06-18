@@ -22,7 +22,7 @@ class ForwardBatchnormTensors(Tensors):
 class BackwardBatchnormTensors(Tensors):
     def __init__(self,avg,std,alpha,beta,input_grad,output_grad):
         super().__init__()
-        self.tensors["avg"] = avg
+        # self.tensors["avg"] = avg
         self.tensors["std"] = std
         self.tensors["alpha"] = alpha
         self.tensors["beta"] = beta
@@ -31,7 +31,7 @@ class BackwardBatchnormTensors(Tensors):
         self.input = output_grad
         self.output = input_grad
 
-        self.add_read_tensor("avg")
+        # self.add_read_tensor("avg")
         self.add_read_tensor("std")
         self.add_read_tensor("alpha")
         self.add_read_tensor("beta")

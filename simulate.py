@@ -19,11 +19,12 @@ from backends.sparse_train.target_code.instruction_gen import InstructionGenerat
 
 from compiler.target.dataflow import Dataflow
 import numpy as np
+from executer.executer import Executer
 def run():
-    torch_net = TestNet()
-    # torch_net = resnet18_cifar()
+    # torch_net = TestNet()
+    torch_net = resnet18_cifar()
     # torch_net = AlexNet()
-    # net = torchvision.
+    torch_net.eval()
 
     total_params = sum(p.numel() for p in torch_net.parameters())
     in_shape=[4,3,32,32]
@@ -33,28 +34,28 @@ def run():
     net = converter.net
     replace_tool = ReplaceTool(net=net,config_path="./backends/sparse_train/replace.yaml")
     # replace_tool.replace_all()
-    # scheduler = NormalScheduler()
-    scheduler = WUImmScheduler()
+    scheduler = NormalScheduler()
+    # scheduler = WUImmScheduler()
     scheduler.schedule(net)
-    print(net)
+    # print(net)
     print(net.count())
     net.reduce_tensor()
     print(net.count())
     net.set_tensor_index()
 
     MemoryManager().tensor_memory_layout2(net)
-    from functools import reduce
+    
     input = torch.randn(in_shape)
     input.requires_grad=True
+    executer = Executer(net)
+    output = executer.execute(input,to="BEdge_0").tensors.get_data("output_grad")
 
-    output = Memory().get(net.sim_run_to(input,"BEdge_0").tensors.get("output_grad").addr)
     torch_output = torch_net(input)
     torch_output = torch.sum(torch_output)
     torch_output.backward()
     torch_output = input.grad
-    print("my   :",output)
-    print("torch:",torch_output)
     if output.shape==torch_output.shape:
+        print(torch.max(torch.abs(output-torch_output)))
         print(torch.max(torch.abs(output-torch_output))<0.01)
     else:
         print(f"Shape is not equal! output.shape={output.shape}, torch_output.shape={torch_output.shape}")

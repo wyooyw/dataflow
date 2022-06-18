@@ -60,18 +60,7 @@ class ForwardRelu(Operator):
     @classmethod
     def get_out_shape_by_in_shape(cls,in_shape,attr):
         return in_shape
-    
-    def sim_run(self):
-        input = self.tensors.get("input")
-        output = self.tensors.get("output")
-        mask = self.tensors.get("mask")
-
-        input = Memory().get(input.addr)
-        Memory().set(output.addr,torch.relu(input))
-        Memory().set(mask.addr,input>0)
-
         
-
 class BackwardRelu(Operator):
     def __init__(self,attrs:BackwardReluAttrs,tensors:BackwardReluTensors,in_shape=[],out_shape=[]):
         super().__init__(type=OperatorType.BACKWARD,
@@ -80,12 +69,3 @@ class BackwardRelu(Operator):
                         name=unique_class_name(self),
                         in_shape=in_shape,
                         out_shape=out_shape)
-
-    def sim_run(self):
-        output_grad = self.tensors.get("output_grad")
-        input_grad = self.tensors.get("input_grad")
-        mask = self.tensors.get("mask")
-
-        output_grad = Memory().get(output_grad.addr)
-        mask = Memory().get(mask.addr)
-        Memory().set(input_grad.addr,torch.mul(output_grad,mask))

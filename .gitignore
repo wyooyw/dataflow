@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# params
+model/resnet18_baseline_new_archi3_bnAffineTrue_fp16/
+
+# dataset
+dataset/
+
+# zip
+*.zip

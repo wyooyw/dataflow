@@ -78,7 +78,7 @@ class DualConv(Dual):
                         kernel_size=module.kernel_size[0],
                         stride=module.stride[0],
                         padding=module.padding[0])
-        dual.forward.get_tensors().tensors["weight"].storage.data = module.weight.detach().numpy()
+        dual.forward.get_tensors().tensors["weight"].storage.data = module.weight.detach()
         return dual
 
 class ForwardConv(Operator):
@@ -146,21 +146,21 @@ class ForwardConv(Operator):
 
         return (out_batch,out_channel,out_height,out_width)
     
-    def sim_run(self):
-        out_channels = self.attrs.get("out_channels")
-        in_channels = self.attrs.get("in_channels")
-        stride = self.attrs.get("stride")
-        kernel_size = self.attrs.get("kernel_size")
-        padding = self.attrs.get("padding")
-        input = self.tensors.get("input")
-        weight = self.tensors.get("weight")
-        output = self.tensors.get("output")
+    # def sim_run(self):
+    #     out_channels = self.attrs.get("out_channels")
+    #     in_channels = self.attrs.get("in_channels")
+    #     stride = self.attrs.get("stride")
+    #     kernel_size = self.attrs.get("kernel_size")
+    #     padding = self.attrs.get("padding")
+    #     input = self.tensors.get("input")
+    #     weight = self.tensors.get("weight")
+    #     output = self.tensors.get("output")
 
-        input = Memory().get(input.addr)
-        weight = Memory().get(weight.addr)
-        conv = nn.Conv2d(in_channels,out_channels,kernel_size,stride=stride,padding=padding,bias=False)
-        conv.weight = torch.nn.Parameter(weight)
-        Memory().set(output.addr,conv(input).detach())
+    #     input = Memory().get(input.addr)
+    #     weight = Memory().get(weight.addr)
+    #     conv = nn.Conv2d(in_channels,out_channels,kernel_size,stride=stride,padding=padding,bias=False)
+    #     conv.weight = torch.nn.Parameter(weight)
+    #     Memory().set(output.addr,conv(input).detach())
         
 
 class BackwardConv(Operator):
@@ -174,42 +174,39 @@ class BackwardConv(Operator):
                         in_shape=in_shape,
                         out_shape=out_shape)
     
-    def sim_run(self):
-        input_grad = self.tensors.get("input_grad")
-        input_width = input_grad.shape[3]
-        weight = self.tensors.get("weight")
-        output_grad = self.tensors.get("output_grad")
+    # def sim_run(self):
+    #     input_grad = self.tensors.get("input_grad")
+    #     input_width = input_grad.shape[3]
+    #     weight = self.tensors.get("weight")
+    #     output_grad = self.tensors.get("output_grad")
 
-        weight = Memory().get(weight.addr)
-        output_grad = Memory().get(output_grad.addr)
-        # print("output_grad:",output_grad)
-        output_grad = padding_inside(output_grad,self.attrs.get("stride")-1)
-        # print("output_grad_pad_inside:",output_grad)
-        # print("weight:",weight)
-        weight = torch.flip(weight,[2,3])
-        weight = torch.transpose(weight,0,1)
-        # print("weight_after:",weight)
-        out_channels,in_channels,kernel_size,_ = weight.shape
-        padding = kernel_size - 1
-        input_grad_addr = input_grad.addr
+    #     weight = Memory().get(weight.addr)
+    #     output_grad = Memory().get(output_grad.addr)
+    #     output_grad = padding_inside(output_grad,self.attrs.get("stride")-1)
 
-        conv = nn.Conv2d(in_channels,out_channels,kernel_size,padding=padding,bias=False)#stride?padding?
-        conv.weight = torch.nn.Parameter(weight)
-        input_grad = conv(output_grad).detach()
-        # print("input_grad:",input_grad)
-        padding = self.attrs.get("padding")
-        # import ipdb
-        # ipdb.set_trace()
+    #     weight = torch.flip(weight,[2,3])
+    #     weight = torch.transpose(weight,0,1)
+    #     out_channels,in_channels,kernel_size,_ = weight.shape
+    #     padding = kernel_size - 1
+    #     input_grad_addr = input_grad.addr
+
+    #     conv = nn.Conv2d(in_channels,out_channels,kernel_size,padding=padding,bias=False)#stride?padding?
+    #     conv.weight = torch.nn.Parameter(weight)
+    #     input_grad = conv(output_grad).detach()
+    #     # print("input_grad:",input_grad)
+    #     padding = self.attrs.get("padding")
+    #     # import ipdb
+    #     # ipdb.set_trace()
         
-        pad = input_width+2*padding-input_grad.shape[3]
-        if pad>0:
-            input_grad = torch.nn.functional.pad(input_grad,[0,pad,0,pad])
-            # print("input_grad_pad:",input_grad)
+    #     pad = input_width+2*padding-input_grad.shape[3]
+    #     if pad>0:
+    #         input_grad = torch.nn.functional.pad(input_grad,[0,pad,0,pad])
+    #         # print("input_grad_pad:",input_grad)
 
-        if padding>0:
-            input_grad = input_grad[:,:,padding:-padding,padding:-padding]
+    #     if padding>0:
+    #         input_grad = input_grad[:,:,padding:-padding,padding:-padding]
 
-        Memory().set(input_grad_addr,input_grad)
+    #     Memory().set(input_grad_addr,input_grad)
     
     def to_instr(self):
         instruction = Instruction(name=self.name,init_data={
@@ -242,29 +239,29 @@ class WGConv(Operator):
                         in_shape=in_shape,
                         out_shape=out_shape)
     
-    def sim_run(self):
+    # def sim_run(self):
 
-        input = self.tensors.get("input")
-        weight_grad = self.tensors.get("weight_grad")
-        output_grad = self.tensors.get("output_grad")
-        out_channels, in_channels, kernel_size, _ = output_grad.shape
-        padding = self.attrs.get("padding")
-        stride = self.attrs.get("stride")
+    #     input = self.tensors.get("input")
+    #     weight_grad = self.tensors.get("weight_grad")
+    #     output_grad = self.tensors.get("output_grad")
+    #     out_channels, in_channels, kernel_size, _ = output_grad.shape
+    #     padding = self.attrs.get("padding")
+    #     stride = self.attrs.get("stride")
 
-        input = Memory().get(input.addr)
-        output_grad = Memory().get(output_grad.addr)
-        input = torch.transpose(input,0,1)
-        output_grad = torch.transpose(output_grad,0,1)
+    #     input = Memory().get(input.addr)
+    #     output_grad = Memory().get(output_grad.addr)
+    #     input = torch.transpose(input,0,1)
+    #     output_grad = torch.transpose(output_grad,0,1)
 
-        output_grad = padding_inside(output_grad,stride-1)
-        _, _, kernel_size, _ = output_grad.shape
+    #     output_grad = padding_inside(output_grad,stride-1)
+    #     _, _, kernel_size, _ = output_grad.shape
 
-        conv = nn.Conv2d(in_channels,out_channels,kernel_size,padding=padding,bias=False)#stride?padding?
-        conv.weight = torch.nn.Parameter(output_grad)
-        weight_grad_addr = weight_grad.addr
-        weight_grad = torch.transpose(conv(input).detach(),0,1)
-        weight_grad = weight_grad[:,:,:self.attrs.get("kernel_size"),:self.attrs.get("kernel_size")]
-        Memory().set(weight_grad_addr,weight_grad)
+    #     conv = nn.Conv2d(in_channels,out_channels,kernel_size,padding=padding,bias=False)#stride?padding?
+    #     conv.weight = torch.nn.Parameter(output_grad)
+    #     weight_grad_addr = weight_grad.addr
+    #     weight_grad = torch.transpose(conv(input).detach(),0,1)
+    #     weight_grad = weight_grad[:,:,:self.attrs.get("kernel_size"),:self.attrs.get("kernel_size")]
+    #     Memory().set(weight_grad_addr,weight_grad)
 
     def to_instr(self):
         instruction = Instruction(name=self.name, init_data={
