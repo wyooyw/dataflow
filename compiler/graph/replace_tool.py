@@ -59,7 +59,7 @@ class ReplaceTool:
             
 
 class Finder:
-    def __init__(self,net:Net,pattern:list[Operator]):
+    def __init__(self,net:Net,pattern:list):
         self.net = net
         self.visit = set() #每个op是否已被访问
         self.pattern = pattern

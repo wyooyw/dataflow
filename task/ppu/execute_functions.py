@@ -11,11 +11,11 @@ def backward_scalar_add(self):
     #prepare tensors
     output_grad = self.tensors.get_data("output_grad")
     output_grad_res = self.tensors.get_data("output_grad_res")
-    bn_var = self.tensors.get_data("bn_std")
+    bn_std = self.tensors.get_data("bn_std")
 
     #compute
     output_grad_res = torch.transpose(output_grad_res,1,3)
-    input_grad = torch.mul(output_grad_res,torch.sqrt(bn_var+1e-5))
+    input_grad = torch.mul(output_grad_res,bn_std)
     input_grad = torch.transpose(input_grad,1,3)
     input_grad = input_grad + output_grad
     
@@ -73,8 +73,7 @@ def cross_entropy_loss(self):
     input = self.forward_softmax.tensors.get_data("input")
     input.requires_grad = True
     label = self.forward_entropy.tensors.get_data("label")
-    import ipdb
-    ipdb.set_trace()
+
     loss = torch_loss_func(input,label)
     loss.backward()
     input_grad = input.grad

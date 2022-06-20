@@ -4,10 +4,10 @@ import copy
 class Tensor:
     # count = 0
     def __init__(self,storage:Storage,
-                        shape:tuple[int],
+                        shape:tuple,
                         addr=None,
                         offset=None,
-                        stride:tuple[int]=None):
+                        stride:tuple=None):
         self.addr = addr
         
         storage.ref_tensors.add(self)

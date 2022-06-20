@@ -61,8 +61,18 @@ def show_memory(net):
                 print(f"  [None] {key}")
 
 def run():
+    use_half = False
+    use_gpu = False
+    assert ((not use_gpu) and (not use_half)) or (use_gpu and torch.cuda.is_available())
+
+
     # Load state_dict
-    sd = torch.load('model/resnet18_baseline_new_archi3_bnAffineTrue_fp16/model_best.pth.tar',map_location=torch.device('cpu'))
+    if use_gpu:
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+    sd = torch.load('model/resnet18_baseline_new_archi3_bnAffineTrue_fp16/model_best.pth.tar',map_location=device)
+    
     state_dict = OrderedDict()
     for key,value in sd["state_dict"].items():
         state_dict[key.replace("module.","")] = value
@@ -70,11 +80,15 @@ def run():
     # Init nureal network
     torch_net = resnet18_cifar()
     torch_net.load_state_dict(state_dict)
-    torch_net = torch_net#.half()
+    if use_gpu:
+        torch_net = torch_net.cuda()
+    if use_half:
+        torch_net = torch_net.half()
+
     torch_net.eval()
 
     #Merge weight,bias into mean,var
-    remove_bn_affine(torch_net)
+    # remove_bn_affine(torch_net)
     
     in_shape=[1,3,32,32]
     print("in_shape:",in_shape)
@@ -110,11 +124,20 @@ def run():
     image,label = train_dataset[1]
     image = image.reshape(1,image.shape[0],image.shape[1],image.shape[2])#.half()
     zeros = torch.tensor([0.0,0,0,0,0,0,0,0,0,0])
-    zeros[label] = 1.0
+    zeros[0] = 1.0
     label = zeros.reshape(1,-1)
     
     input = image#(torch.range(1.0,3*32*32)/512).reshape(1,3,32,32)
     label = label#torch.tensor([[1.0,0,0,0,0,0,0,0,0,0]])
+
+    if use_gpu:
+        input = input.cuda()
+        label = label.cuda()
+    if use_half:
+        input = input.half()
+        label = label.half()
+
+
     input.requires_grad=True
     executer = Executer(net)
     output = executer.execute(input,label,to="BEdge_0").tensors.get_data("output_grad")
@@ -124,11 +147,16 @@ def run():
     torch_output = torch.nn.CrossEntropyLoss()(torch_output,label)
     torch_output.backward()
     torch_output = input.grad
-    print(net)
+    # torch_output = torch_net.conv1.weight.grad
+    # print(net)
     # print(output)
     # print(output)
     # print(torch_output)
     if output.shape==torch_output.shape:
+        # print(output)
+        # print(label)
+        print(torch.max(torch.abs(output)))
+        print(torch.max(torch.abs(torch_output)))
         print(torch.max(torch.abs(output-torch_output)))
         print(torch.max(torch.abs(output-torch_output))<0.01)
     else:

@@ -59,20 +59,21 @@ def replace(net):
 
 def remove_bn_affine(net):
     def _remove_bn_affine(module):
-        if type(module)==nn.BatchNorm2d:
-            num_features = module.num_features
-            weight = module.weight.detach()
-            bias = module.bias.detach()
-            if module.weight==None and module.bias==None:
-                return
-            mean = module.running_mean.detach()
-            var = module.running_var.detach()
-            new_var = var/torch.square(weight)
-            new_mean = mean - torch.mul(bias,new_var)
+        pass
+    #     if type(module)==nn.BatchNorm2d:
+    #         num_features = module.num_features
+    #         weight = module.weight.detach()
+    #         bias = module.bias.detach()
+    #         if module.weight==None and module.bias==None:
+    #             return
+    #         mean = module.running_mean.detach()
+    #         var = module.running_var.detach()
+    #         new_var = var/torch.square(weight)
+    #         new_mean = mean - torch.mul(bias,new_var)
 
-            module.affine = False
-            module.running_mean = new_mean
-            module.running_var = new_var
-            module.weight = None
-            module.bias = None
-    net.apply(_remove_bn_affine)
+    #         module.affine = False
+    #         module.running_mean = new_mean
+    #         module.running_var = new_var
+    #         module.weight = None
+    #         module.bias = None
+    # net.apply(_remove_bn_affine)

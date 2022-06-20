@@ -111,11 +111,11 @@ class RawData(object):
         if type(data_list)==np.ndarray:
             data_list = data_list.tolist()
         # assert type(data_list) == list
-        if type(data_list[0]) == RawDataCell:
+        if type(data_0]) == RawDataCell:
             self.data_list = data_list
         else:
             self.data_list = [RawDataCell(data) for data in data_list]
-        # assert type(data_list[0]) == RawDataCell
+        # assert type(data_0]) == RawDataCell
         
     def to_bits(self):
         bits = BitArrayFactory.get()
@@ -146,7 +146,7 @@ class GroupData(object):
     def __init__(self,data_list=[]):
         assert type(data_list) == list
         if len(data_list)>0:
-            assert type(data_list[0])==Data
+            assert type(data_0])==Data
         self.data_list = data_list
         
 

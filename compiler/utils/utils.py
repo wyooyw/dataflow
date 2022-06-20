@@ -56,13 +56,13 @@ def padding_inside(tensor,padding=1):
     if padding==0:
         return tensor
     batch,channel,height,width = tensor.shape
-    padding_zeros = torch.zeros(batch,channel,height,width*padding)
+    padding_zeros = torch.zeros(batch,channel,height,width*padding).to(tensor.device,tensor.dtype)
     tensor = torch.cat( (tensor,padding_zeros),3 )
     tensor = tensor.reshape(batch,channel,height*(padding+1),width)
 
     tensor = torch.transpose(tensor,2,3)
     batch,channel,height,width = tensor.shape
-    padding_zeros = torch.zeros(batch,channel,height,width*padding)
+    padding_zeros = torch.zeros(batch,channel,height,width*padding).to(tensor.device,tensor.dtype)
     tensor = torch.cat( (tensor,padding_zeros),3 )
     tensor = tensor.reshape(batch,channel,height*(padding+1),width)
     tensor = tensor[:,:,:-padding,:-padding]

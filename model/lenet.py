@@ -3,7 +3,7 @@ import torch
 class TestNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv = nn.Conv2d(3,3,5,stride=1,padding=0,bias=False)
+        # self.conv = nn.Conv2d(3,3,5,stride=1,padding=0,bias=False)
         # self.conv.weight = nn.Parameter(torch.range(1.0,12.0).reshape(3,1,2,2))
         self.relu = nn.ReLU()
         self.conv2 = nn.Conv2d(3,3,3,stride=1,padding=1,bias=False)
@@ -25,24 +25,24 @@ class TestNet(nn.Module):
         self.flatten = nn.Flatten()
 
     def forward(self,x):
-        x = self.conv(x)
-        x = self.relu(x)
-        identity = x
-        x = self.conv2(x)
-        x = self.relu2(x)
-        x = x + identity
-        y = x
-        x = self.conv3(x)
-        x = self.relu3(x)
-
-        y = self.conv4(y)
-        y = self.relu4(y)
-
-        x = x + y
-        x = self.bn(x)
-        x = self.pool(x)
-        x = self.flatten(x)
-        x = self.linear(x)
+        # x = self.conv(x)
         # x = self.relu(x)
-        # x = self.linear2(x)
+        # identity = x
+        # x = self.conv2(x)
+        # x = self.relu2(x)
+        # x = x + identity
+        # y = x
+        # x = self.conv3(x)
+        # x = self.relu3(x)
+
+        # y = self.conv4(y)
+        # y = self.relu4(y)
+
+        # x = x + y
+        x = self.bn(x)
+        # x = self.pool(x)
+        # x = self.flatten(x)
+        # x = self.linear(x)
+        # x = self.relu(x)
+        x = self.linear(x)
         return x

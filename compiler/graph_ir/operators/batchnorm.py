@@ -54,15 +54,25 @@ class DualBatchnorm(Dual):
         
         # var和mean
         assert not (module.running_mean==None or module.running_var==None),"PyTorch BatchNorm2d doesn't have running_mean or running_var."
-        dual.forward.get_tensors().tensors["avg"].storage.data = module.running_mean.detach()
-        #TODO 改一下std的名字，改成var
-        dual.forward.get_tensors().tensors["std"].storage.data = module.running_var.detach()
+        assert not (module.weight==None or module.bias==None),"PyTorch BatchNorm2d doesn't have weight or bias."
+        mean = module.running_mean.detach()
+        var = module.running_var.detach()
+        std = torch.sqrt(var+1e-5)
 
-        # weight和bias
         if dual.forward.attrs.get("affine")==True:
-            assert not (module.weight==None or module.bias==None),"PyTorch BatchNorm2d doesn't have weight or bias."
-            dual.forward.get_tensors().tensors["alpha"].storage.data = module.weight.detach()
-            dual.forward.get_tensors().tensors["beta"].storage.data = module.bias.detach()
+            weight = module.weight.detach()
+            bias = module.bias.detach()
+            std = std / weight
+            mean = mean - bias * std
+
+        dual.forward.get_tensors().tensors["avg"].storage.data = mean
+        dual.forward.get_tensors().tensors["std"].storage.data = std
+
+        # # weight和bias
+        # if dual.forward.attrs.get("affine")==True:
+        #     assert not (module.weight==None or module.bias==None),"PyTorch BatchNorm2d doesn't have weight or bias."
+        #     dual.forward.get_tensors().tensors["alpha"].storage.data = module.weight.detach()
+        #     dual.forward.get_tensors().tensors["beta"].storage.data = module.bias.detach()
         
         
         

@@ -167,19 +167,27 @@ def forward_batchnorm(self):
     # prepare tensors
     input = self.tensors.get_data("input")
     avg = self.tensors.get_data("avg")
-    var = self.tensors.get_data("std")
+    std = self.tensors.get_data("std")
 
-    bn = nn.BatchNorm2d(num_features,affine=affine)
-    bn.eval()
-    bn.running_mean = avg
-    bn.running_var = var
-    if affine:
-        alpha = self.tensors.get_data("alpha")
-        beta = self.tensors.get_data("beta")
-        bn.weight = nn.Parameter(alpha)
-        bn.bias = nn.Parameter(beta)
+    # compute
+    output = torch.transpose(input,1,3)
+    output = (output-avg)/std
+    output = torch.transpose(output,1,3)
 
-    output = bn(input).detach()
+    # bn = nn.BatchNorm2d(num_features,affine=affine)
+    # bn.eval()
+    # bn.running_mean = avg
+    # bn.running_var = var
+    # if affine:
+    #     alpha = self.tensors.get_data("alpha")
+    #     beta = self.tensors.get_data("beta")
+    #     bn.weight = nn.Parameter(alpha)
+    #     bn.bias = nn.Parameter(beta)
+
+    # output = bn(input).detach()
+
+
+    #save back
     self.tensors.set_data("output",output)
 
 @bind(operator="BackwardBatchnorm")
@@ -190,13 +198,13 @@ def backward_batchnorm(self):
 
     # prepare tensors
     output_grad = self.tensors.get_data("output_grad")
-    var = self.tensors.get_data("std")
+    std = self.tensors.get_data("std")
 
     # compute
-    diff = 1/torch.sqrt(var+1e-5)
-    if affine:
-        alpha = self.tensors.get_data("alpha")
-        diff = torch.mul(alpha,diff)
+    diff = 1 / std
+    # if affine:
+    #     alpha = self.tensors.get_data("alpha")
+    #     diff = torch.mul(alpha,diff)
     output_grad = torch.transpose(output_grad,1,3)
     input_grad = torch.mul(output_grad,diff)
     input_grad = torch.transpose(input_grad,1,3)
@@ -216,7 +224,7 @@ def forward_maxpool(self):
     output,indices = torch.nn.functional.max_pool2d(input, kernel_size,return_indices=True)
     
     batch,channel,height,width = input.shape
-    mask = torch.zeros(batch,channel,height*width)
+    mask = torch.zeros(batch,channel,height*width).to(input.device,input.dtype)
     indices = indices.reshape(batch,channel,-1)
     for b in range(batch):
         for c in range(channel):
