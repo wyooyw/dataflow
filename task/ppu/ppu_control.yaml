@@ -1,14 +1,14 @@
 #BN模块
-- name: bn_en
+- name: bn_fwd_en
   long: 1
   terms:
     "0": bypass
     "1": enable
-- name: bn_direct
+- name: bn_bp_en
   long: 1
   terms:
-    "0": forward
-    "1": backward
+    "0": bypass
+    "1": enable
 - name: bn_double_en
   long: 1
   terms:

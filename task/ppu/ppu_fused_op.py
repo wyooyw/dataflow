@@ -36,15 +36,15 @@ class ForwardPPUFusedOp(Operator):
         bn_finish = 0
         if self.bn:
             bn_input_shape = self.bn.tensors.get("input").shape
-            bn_finish = bn_input_shape[1]*bn_input_shape[2]*bn_input_shape[3] - 1
+            bn_finish = bn_input_shape[0]*bn_input_shape[2]*bn_input_shape[3] - 1
         res_acc_finish = 0
         if self.add:
             add_input_shape = self.add.tensors.get("input1").shape
-            res_acc_finish = add_input_shape[1]*add_input_shape[2]*add_input_shape[3] - 1
+            res_acc_finish = add_input_shape[0]*add_input_shape[2]*add_input_shape[3] - 1
         instruction = Instruction(config_path="task/ppu/ppu_control.yaml",name="ppu",init_data={
             #BatchNorm
-            "bn_en":"enable" if self.bn else "bypass",
-            "bn_direct":"forward",
+            "bn_fwd_en":"enable" if self.bn else "bypass",
+            "bn_bp_en":"bypass",
             "bn_double_en":"single",
             # "bn_finish":bn_finish,
             #ReLU
@@ -99,7 +99,7 @@ class BackwardPPUFusedOp(Operator):
         bn_finish = 0
         if self.bn:
             bn_input_shape = self.bn.tensors.get("input_grad").shape
-            bn_finish = bn_input_shape[1]*bn_input_shape[2]*bn_input_shape[3]-1
+            bn_finish = bn_input_shape[0]*bn_input_shape[2]*bn_input_shape[3]-1
 
         bn_double_en = "single"
         bns = [op for op in self.op_list if type(op).__name__=="BackwardBatchnorm"]
@@ -109,11 +109,11 @@ class BackwardPPUFusedOp(Operator):
         res_acc_finish = 0
         if self.add:
             add_input_shape = self.add.tensors.get("input_grad").shape
-            res_acc_finish = add_input_shape[1]*add_input_shape[2]*add_input_shape[3]-1
+            res_acc_finish = add_input_shape[0]*add_input_shape[2]*add_input_shape[3]-1
         instruction = Instruction(config_path="task/ppu/ppu_control.yaml",name="ppu",init_data={
             #BatchNorm
-            "bn_en":"enable" if self.bn else "bypass",
-            "bn_direct":"backward",
+            "bn_fwd_en":"bypass",
+            "bn_bp_en":"enable" if self.bn else "bypass",
             "bn_double_en":bn_double_en,
             #ReLU
             "act_fwd_en": "bypass",
