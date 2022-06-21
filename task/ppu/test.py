@@ -12,10 +12,10 @@ def different(result,answer):
     else:
         print(f"Shape is not equal! result.shape={result.shape}, answer.shape={answer.shape}")
 def test1():
-    bn_std_reci = load(1,"BackwardBatchnorm.std_reci",512)
-    bn_input_grad = load(1,"BackwardBatchnorm.input_grad",[1,512,4,4])
-    relu_mask = load(1,"BackwardRelu.mask",[1,512,4,4])
-    relu_output_grad = load(1,"BackwardRelu.output_grad",[1,512,4,4])
+    bn_std_reci = load(1,"BackwardBatchnorm.std_reci",512)#.half()
+    bn_input_grad = load(1,"BackwardBatchnorm.input_grad",[1,512,4,4])#.half()
+    relu_mask = load(1,"BackwardRelu.mask",[1,512,4,4])#.half()
+    relu_output_grad = load(1,"BackwardRelu.output_grad",[1,512,4,4])#.half()
     # print(bn_std_reci.dtype)
     rst = torch.mul(relu_mask,relu_output_grad)
     rst = torch.transpose(rst,1,3)
@@ -24,12 +24,12 @@ def test1():
     different(rst,bn_input_grad)
 
 def test2():
-    bn_std_reci = load(2,"BackwardBatchnorm.std_reci",512)
-    bn_input_grad = load(2,"BackwardBatchnorm.input_grad",[1,512,4,4])
-    relu_mask = load(2,"BackwardRelu.mask",[1,512,4,4])
-    res_output_grad = load(2,"BackwardResAccSingle.output_grad",[1,512,4,4])
-    res_output_grad_res = load(2,"BackwardResAccSingle.output_grad_res",[1,512,4,4])
-    res_std = load(2,"BackwardResAccSingle.std",512)
+    bn_std_reci = load(2,"BackwardBatchnorm.std_reci",512)#.half()
+    bn_input_grad = load(2,"BackwardBatchnorm.input_grad",[1,512,4,4])#.half()
+    relu_mask = load(2,"BackwardRelu.mask",[1,512,4,4])#.half()
+    res_output_grad = load(2,"BackwardResAccSingle.output_grad",[1,512,4,4])#.half()
+    res_output_grad_res = load(2,"BackwardResAccSingle.output_grad_res",[1,512,4,4])#.half()
+    res_std = load(2,"BackwardResAccSingle.std",512)#.half()
 
     rst = res_output_grad_res
     
@@ -44,5 +44,35 @@ def test2():
     rst = torch.mul(rst,bn_std_reci)
     rst = torch.transpose(rst,1,3)
     different(rst,bn_input_grad)
+
+def test_double_bn():
+    bn_std_reci1 = load(2,"BackwardBatchnorm1.std_reci",512).half()
+    bn_input_grad1 = load(2,"BackwardBatchnorm1.input_grad",[1,512,4,4]).half()
+    bn_std_reci2 = load(2,"BackwardBatchnorm2.std_reci",512).half()
+    bn_input_grad2 = load(2,"BackwardBatchnorm2.input_grad",[1,512,4,4]).half()
+
+    relu_mask = load(2,"BackwardRelu.mask",[1,512,4,4]).half()
+
+    res_output_grad = load(2,"BackwardResAccSingle.output_grad",[1,512,4,4]).half()
+    res_output_grad_res = load(2,"BackwardResAccSingle.output_grad_res",[1,512,4,4]).half()
+    res_std = load(2,"BackwardResAccSingle.std",512).half()
+
+    rst = res_output_grad_res
+    
+    rst = torch.transpose(rst,1,3)
+    rst = torch.mul(rst,res_std)
+    rst = torch.transpose(rst,1,3)
+
+    rst += res_output_grad
+
+    rst = torch.mul(rst,relu_mask)
+
+    rst = torch.transpose(rst,1,3)
+    rst1 = torch.mul(rst,bn_std_reci1)
+    rst2 = torch.mul(rst,bn_std_reci2)
+    rst1 = torch.transpose(rst1,1,3)
+    rst2 = torch.transpose(rst2,1,3)
+    different(rst1,bn_input_grad1)
+    different(rst2,bn_input_grad2)
 if __name__=="__main__":
-    test1()
+    test_double_bn()

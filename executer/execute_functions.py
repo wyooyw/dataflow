@@ -166,21 +166,18 @@ def forward_batchnorm(self):
 
     # prepare tensors
     input = self.tensors.get_data("input")
-    avg = self.tensors.get_data("avg")
+    mean = self.tensors.get_data("mean")
     std = self.tensors.get_data("std")
 
     # compute
     output = torch.transpose(input,1,3)
-    output = (output-avg)/std
-    output = torch.transpose(output,1,3)
+    output = (output-mean)/std
 
-    # bn = nn.BatchNorm2d(num_features,affine=affine)
-    # bn.eval()
-    # bn.running_mean = avg
-    # bn.running_var = var
-    # if affine:
-    #     alpha = self.tensors.get_data("alpha")
-    #     beta = self.tensors.get_data("beta")
+    if affine:
+        alpha = self.tensors.get_data("alpha")
+        beta = self.tensors.get_data("beta")
+        output = torch.mul(output,alpha) + beta
+    output = torch.transpose(output,1,3)
     #     bn.weight = nn.Parameter(alpha)
     #     bn.bias = nn.Parameter(beta)
 
@@ -202,9 +199,9 @@ def backward_batchnorm(self):
 
     # compute
     diff = 1 / std
-    # if affine:
-    #     alpha = self.tensors.get_data("alpha")
-    #     diff = torch.mul(alpha,diff)
+    if affine:
+        alpha = self.tensors.get_data("alpha")
+        diff = torch.mul(alpha,diff)
     output_grad = torch.transpose(output_grad,1,3)
     input_grad = torch.mul(output_grad,diff)
     input_grad = torch.transpose(input_grad,1,3)

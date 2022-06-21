@@ -26,6 +26,11 @@
 - pattern:
   - BackwardScalarAdd
   - BackwardRelu
+  - DoubleBn
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardScalarAdd
+  - BackwardRelu
   - BackwardBatchnorm
   replace: BackwardPPUFusedOp
 - pattern:

@@ -61,8 +61,8 @@ def show_memory(net):
                 print(f"  [None] {key}")
 
 def run():
-    use_half = False
-    use_gpu = False
+    use_half = True
+    use_gpu = True
     assert ((not use_gpu) and (not use_half)) or (use_gpu and torch.cuda.is_available())
 
 
@@ -140,25 +140,26 @@ def run():
 
     input.requires_grad=True
     executer = Executer(net)
-    output = executer.execute(input,label,to="BEdge_0").tensors.get_data("output_grad")
+    output = executer.execute(input,label,to="WGConv_0").tensors.get_data("weight_grad")
     # output = executer.execute(input,label,to="FLinear_0").tensors.get_data("output")
 
     torch_output = torch_net(input)
     torch_output = torch.nn.CrossEntropyLoss()(torch_output,label)
     torch_output.backward()
-    torch_output = input.grad
-    # torch_output = torch_net.conv1.weight.grad
+    # torch_output = input.grad
+    torch_output = torch_net.conv1.weight.grad
     # print(net)
     # print(output)
-    # print(output)
-    # print(torch_output)
+    print(output[0,:,:,:])
+    print(torch_output[0,:,:,:])
     if output.shape==torch_output.shape:
         # print(output)
         # print(label)
         print(torch.max(torch.abs(output)))
         print(torch.max(torch.abs(torch_output)))
+        print(torch.mean(torch.abs(output-torch_output)))
         print(torch.max(torch.abs(output-torch_output)))
-        print(torch.max(torch.abs(output-torch_output))<0.01)
+        # print(torch.mean(torch.abs(output-torch_output))<0.01)
     else:
         print(f"Shape is not equal! output.shape={output.shape}, torch_output.shape={torch_output.shape}")
     

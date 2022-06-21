@@ -100,6 +100,12 @@ class BackwardPPUFusedOp(Operator):
         if self.bn:
             bn_input_shape = self.bn.tensors.get("input_grad").shape
             bn_finish = bn_input_shape[1]*bn_input_shape[2]*bn_input_shape[3]-1
+
+        bn_double_en = "single"
+        bns = [op for op in self.op_list if type(op).__name__=="BackwardBatchnorm"]
+        if len(bns)==2:
+            bn_double_en = "double"
+        print(bn_double_en)
         res_acc_finish = 0
         if self.add:
             add_input_shape = self.add.tensors.get("input_grad").shape
@@ -108,7 +114,7 @@ class BackwardPPUFusedOp(Operator):
             #BatchNorm
             "bn_en":"enable" if self.bn else "bypass",
             "bn_direct":"backward",
-            "bn_double_en":"single",
+            "bn_double_en":bn_double_en,
             #ReLU
             "act_fwd_en": "bypass",
             "act_bp_en": "enable" if self.relu else "bypass",

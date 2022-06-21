@@ -4,7 +4,7 @@ import torch
 from compiler.utils.utils import str_title
 from collections import OrderedDict
 
-save_data = False
+save_data = True
 
 @bind(operator="BackwardScalarAdd")
 def backward_scalar_add(self):
@@ -122,7 +122,7 @@ def make_op_name(op_list):
             class_name_index[class_name] += 1
         else:
             op_name[op] = reflect_class_name
-    
+    print(op_name.values(),len(op_list))
     return op_name
 
 
@@ -136,15 +136,15 @@ def stats_tensors(op_list):
             if tensor in visit:
                 continue
             visit.add(tensor)
-            if op_name.startswith("BackwardBatchnorm") and name=="avg":
+            if op_name.startswith("BackwardBatchnorm") and name=="mean":
                 continue
             #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
             if name=="std":
-                op_tensor[f"std_reci"] = 1/torch.sqrt(tensor.storage.data+1e-5)
+                op_tensor[f"std_reci"] = 1/tensor.storage.data
                 continue
             #BackwardScalarAdd用到的方差，转换为标准差
             if name=="bn_std":
-                op_tensor[f"std"] = torch.sqrt(tensor.storage.data+1e-5)
+                op_tensor[f"std"] = tensor.storage.data
                 continue
             if not tensor.storage.data==None:
                 op_tensor[name] = tensor.storage.data
@@ -153,14 +153,19 @@ def stats_tensors(op_list):
     return record
 
 def stats_inout_tensors(op_list):
+    
     include = set() #所有涉及到的张量
     exclude = set()
+    include_name = set()
+    exclude_name = set()
     for op,_ in op_list.items():
         for name,tensor in op.tensors.tensors.items():
             if tensor in include:
                 exclude.add(tensor)
+                exclude_name.add(name)
             else:
                 include.add(tensor)
+                include_name.add(name)
 
     inout_tensors = include - exclude
 
@@ -169,15 +174,15 @@ def stats_inout_tensors(op_list):
         op_tensor = {}
         for name,tensor in op.tensors.tensors.items():
             if tensor in inout_tensors:
-                if name=="avg":
+                if op_name.startswith("BackwardBatchnorm") and name=="mean":
                     continue
                 #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
                 if name=="std":
-                    op_tensor[f"std_reci"] = 1/torch.sqrt(tensor.storage.data+1e-5)
+                    op_tensor[f"std_reci"] = 1/tensor.storage.data
                     continue
                 #BackwardScalarAdd用到的方差，转换为标准差
                 if name=="bn_std":
-                    op_tensor[f"std"] = torch.sqrt(tensor.storage.data+1e-5)
+                    op_tensor[f"std"] = tensor.storage.data
                     continue
                 if not tensor.storage.data==None:
                     op_tensor[name] = tensor.storage.data
@@ -221,7 +226,7 @@ def save_to_file(direct,op_stats,tensor_stats,inout_tensor_stats,ppu_instr,path=
     for op_name,tensor_list in inout_tensor_stats.items():
         for tensor_name,tensor in tensor_list.items():
             info.append(f"{op_name}.{tensor_name}.shape={list(tensor.shape)}")
-            tensor = tensor.reshape(-1).numpy()
+            tensor = tensor.reshape(-1).cpu().numpy()
             file_path = os.path.join(path,f"{op_name}.{tensor_name}.txt")
             if tensor.dtype==bool or tensor.dtype==np.int32:
                 np.savetxt(file_path, tensor, fmt="%d", delimiter=" ")
@@ -239,7 +244,7 @@ def save_to_file(direct,op_stats,tensor_stats,inout_tensor_stats,ppu_instr,path=
     for op_name,tensor_list in tensor_stats.items():
         for tensor_name,tensor in tensor_list.items():
             info2.append(f"{op_name}.{tensor_name}.shape={tensor.shape}")
-            tensor = tensor.reshape(-1).numpy()
+            tensor = tensor.reshape(-1).cpu().numpy()
             file_path = os.path.join(path,"detail",f"{op_name}.{tensor_name}.txt")
             if tensor.dtype==bool or tensor.dtype==np.int32:
                 np.savetxt(file_path, tensor, fmt="%d", delimiter=" ")
