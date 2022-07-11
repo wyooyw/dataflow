@@ -61,8 +61,8 @@ def show_memory(net):
                 print(f"  [None] {key}")
 
 def run():
-    use_half = True
-    use_gpu = True
+    use_half = False
+    use_gpu = False
     assert ((not use_gpu) and (not use_half)) or (use_gpu and torch.cuda.is_available())
 
 
@@ -90,7 +90,7 @@ def run():
     #Merge weight,bias into mean,var
     # remove_bn_affine(torch_net)
     
-    in_shape=[1,3,32,32]
+    in_shape=[4,3,32,32]
     print("in_shape:",in_shape)
     converter = Converter(torch_net,in_shape=in_shape)
     converter.convert()
@@ -121,14 +121,21 @@ def run():
                                   std = (0.2023, 0.1994, 0.2010)),
             ])
     train_dataset = torchvision.datasets.CIFAR10(root="dataset", train=True, transform=train_transformer)
-    image,label = train_dataset[1]
-    image = image.reshape(1,image.shape[0],image.shape[1],image.shape[2])#.half()
-    zeros = torch.tensor([0.0,0,0,0,0,0,0,0,0,0])
-    zeros[0] = 1.0
-    label = zeros.reshape(1,-1)
-    
-    input = image#(torch.range(1.0,3*32*32)/512).reshape(1,3,32,32)
-    label = label#torch.tensor([[1.0,0,0,0,0,0,0,0,0,0]])
+    def load_data(n):
+        images = []
+        labels = []
+        for i in range(0,n):
+            image,label = train_dataset[i]
+            image = image.reshape(1,image.shape[0],image.shape[1],image.shape[2])#.half()
+            zero = torch.tensor([[0.0]*10]).reshape(1,10)
+            zero[0] = 1.0
+            images.append(image)
+            labels.append(zero)
+        images = torch.cat(images,0)
+        labels = torch.cat(labels,0)
+        return images,labels
+
+    input,label = load_data(4)
 
     if use_gpu:
         input = input.cuda()

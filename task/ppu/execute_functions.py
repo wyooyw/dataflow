@@ -125,6 +125,53 @@ def make_op_name(op_list):
     print(op_name.values(),len(op_list))
     return op_name
 
+def mask_to_ptr(input,kernel_size):
+    batch,channel,height,width = input.shape
+    assert height%kernel_size==0 and width%kernel_size==0
+    input = input.reshape(batch * channel * height//kernel_size,kernel_size,width//kernel_size,kernel_size)
+    input = torch.transpose(input,1,2)
+    _,indices = torch.nn.functional.max_pool2d(input, kernel_size,return_indices=True)
+    indices = indices.reshape(batch,channel,height//kernel_size,width//kernel_size)
+    return indices
+
+def prepare_tensor(op,op_name,tensor,tensor_name):
+    """ 对遍历到的tensor做一些修改
+
+    1.BatchNorm的标准差,改为倒数
+    2.BackwardScalarAdd的bn_std,改名为std
+    3.BackwardBatchnorm的mean不需要(后续推一下一般的BN里是否需要这个数)
+    4.判断数据是否为None
+    5.特征图和特征图梯度均只要第0个Channel
+    6.BatchNorm的mean和std只要第一个数
+    7.relu的mask只要第一个channel
+    """
+
+    if tensor.storage.data==None:
+        return None, None
+
+    if op_name in ["ForwardMaxpool","BackwardMaxpool"] and tensor_name=="mask":
+        tensor = mask_to_ptr(tensor.storage.data[:,0:1,:,:],op.attrs.get("kernel_size"))
+        return "ptr", tensor[:,0:1,:,:]
+
+
+    if tensor_name in ["input","output","input_grad","output_grad","mask","input2","output_grad2","output_grad_res"]:
+        return tensor_name, tensor.storage.data[:,0:1,:,:]
+
+    if op_name.startswith("BackwardBatchnorm") and tensor_name=="mean":
+        return None, None
+
+    #BatchNorm的标准差，取倒数，这样S2Train上只需要做乘法
+    if tensor_name=="std":
+        return f"std_reci", 1/tensor.storage.data[0:1]
+
+    #BackwardScalarAdd用到的标准差
+    if tensor_name=="bn_std":
+        return f"std", tensor.storage.data[0:1]
+
+    if tensor_name=="mean":
+        return tensor_name, tensor.storage.data[0:1]
+
+    return tensor_name, tensor.storage.data
 
 def stats_tensors(op_list):
     visit = set()
@@ -132,22 +179,25 @@ def stats_tensors(op_list):
     for op,op_name in op_list.items():
         op_tensor = {}
 
-        for name,tensor in op.tensors.tensors.items():
+        for tensor_name,tensor in op.tensors.tensors.items():
             if tensor in visit:
                 continue
             visit.add(tensor)
-            if op_name.startswith("BackwardBatchnorm") and name=="mean":
-                continue
-            #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
-            if name=="std":
-                op_tensor[f"std_reci"] = 1/tensor.storage.data
-                continue
-            #BackwardScalarAdd用到的方差，转换为标准差
-            if name=="bn_std":
-                op_tensor[f"std"] = tensor.storage.data
-                continue
-            if not tensor.storage.data==None:
-                op_tensor[name] = tensor.storage.data
+            _tensor_name, _tensor = prepare_tensor(op, op_name, tensor, tensor_name)
+            if (not _tensor_name==None) and (not _tensor==None):
+                op_tensor[_tensor_name] = _tensor
+            # if op_name.startswith("BackwardBatchnorm") and name=="mean":
+            #     continue
+            # #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
+            # if name=="std":
+            #     op_tensor[f"std_reci"] = 1/tensor.storage.data
+            #     continue
+            # #BackwardScalarAdd用到的方差，转换为标准差
+            # if name=="bn_std":
+            #     op_tensor[f"std"] = tensor.storage.data
+            #     continue
+            # if not tensor.storage.data==None:
+            #     op_tensor[name] = tensor.storage.data
         record[op_name] = op_tensor
 
     return record
@@ -172,20 +222,24 @@ def stats_inout_tensors(op_list):
     record = {}
     for op,op_name in op_list.items():
         op_tensor = {}
-        for name,tensor in op.tensors.tensors.items():
+        for tensor_name,tensor in op.tensors.tensors.items():
             if tensor in inout_tensors:
-                if op_name.startswith("BackwardBatchnorm") and name=="mean":
-                    continue
-                #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
-                if name=="std":
-                    op_tensor[f"std_reci"] = 1/tensor.storage.data
-                    continue
-                #BackwardScalarAdd用到的方差，转换为标准差
-                if name=="bn_std":
-                    op_tensor[f"std"] = tensor.storage.data
-                    continue
-                if not tensor.storage.data==None:
-                    op_tensor[name] = tensor.storage.data
+                _tensor_name, _tensor = prepare_tensor(op, op_name, tensor, tensor_name)
+                if (not _tensor_name==None) and (not _tensor==None):
+                    op_tensor[_tensor_name] = _tensor
+
+                # if op_name.startswith("BackwardBatchnorm") and name=="mean":
+                #     continue
+                # #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
+                # if name=="std":
+                #     op_tensor[f"std_reci"] = 1/tensor.storage.data
+                #     continue
+                # #BackwardScalarAdd用到的方差，转换为标准差
+                # if name=="bn_std":
+                #     op_tensor[f"std"] = tensor.storage.data
+                #     continue
+                # if not tensor.storage.data==None:
+                #     op_tensor[name] = tensor.storage.data
         record[op_name] = op_tensor
     return record
 

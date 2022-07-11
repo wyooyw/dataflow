@@ -5,6 +5,22 @@ from compiler.utils.utils import padding_inside
 import os
 bind_table = dict()
 def bind(operator):
+    """ Bind execute function on operator
+
+    Args:
+        operator: The class name of operator to bind.
+
+    Returns:
+        decorate
+
+    Examples:
+        @bind(operator="ForwardRelu")
+        def forward_relu(self):
+            input = self.tensors.get_data("input")
+            output = torch.relu(input)
+            self.tensors.set_data("output",output)
+            self.tensors.set_data("mask",input>0)
+    """
     assert type(operator)==str
     def decorate(f):
         bind_table[operator] = f
