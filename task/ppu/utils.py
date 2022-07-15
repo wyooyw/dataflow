@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from task.ppu.op.scalar_add import BackwardScalarAdd
+# from task.ppu.op.scalar_add import BackwardScalarAdd
 
 def judge_single_line(operator):
     if not type(operator).__name__ in ["BackwardSplit"]:
@@ -77,3 +77,30 @@ def remove_bn_affine(net):
     #         module.weight = None
     #         module.bias = None
     # net.apply(_remove_bn_affine)
+
+
+def _convert_tensor_layout_4d(tensor,out_tile_len):
+    batch,channel,height,width = tensor.shape
+    assert width%out_tile_len==0 or width<=out_tile_len,"Width of the tensor is not good."
+    if width > out_tile_len:
+        tensor = tensor.reshape(batch,channel,height,width//out_tile_len,out_tile_len)
+        tensor = tensor.transpose(2,3)
+    return tensor
+
+def _convert_tensor_layout_2d(tensor,out_tile_len):
+    return tensor
+    
+def convert_tensor_layout(tensor,out_tile_len=16,div=1):
+    out_tile_len = out_tile_len // div
+    if tensor.ndim==4:
+        return _convert_tensor_layout_4d(tensor,out_tile_len)
+    elif tensor.ndim==2:
+        return _convert_tensor_layout_2d(tensor,out_tile_len)
+    else:
+        assert False
+
+if __name__=="__main__":
+    tensor = torch.arange(0,64).reshape(1,1,8,8)
+    print(tensor)
+    tensor_layout = _convert_tensor_layout_4d(tensor,out_tile_len=10)
+    print(tensor_layout)

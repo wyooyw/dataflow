@@ -5,6 +5,7 @@ def load(index,name,shape,type=torch.float32):
     tensor = np.loadtxt(f"test_data/backward/{index}/{name}.txt", delimiter=" ").reshape(shape)
     tensor = torch.from_numpy(tensor)
     return tensor
+    
 def different(result,answer):
     if result.shape==answer.shape:
         print(torch.max(torch.abs(result-answer)))
@@ -74,5 +75,20 @@ def test_double_bn():
     rst2 = torch.transpose(rst2,1,3)
     different(rst1,bn_input_grad1)
     different(rst2,bn_input_grad2)
+
+def test_maxpool():
+    input = np.loadtxt(f"test_data/forward/0/detail/ForwardRelu.output.txt", delimiter=" ").reshape(4,1,32,32)
+    batch,channel,height,width = input.shape
+    input = input.reshape(batch,channel,height//2,2,width//2,2)
+    input = np.transpose(input,(0,1,2,4,3,5))
+    input = input.reshape(batch,height * width//4,4)
+    # input = torch.from_numpy(input)
+
+    ls = input[0].tolist()
+    # for idx,item in enumerate():
+    ls = [f"{index} {str(item)}" for index,item in enumerate(ls)]
+    print(len(ls))
+    print("\r\n".join(ls))
 if __name__=="__main__":
-    test_double_bn()
+    # test_double_bn()
+    test_maxpool()

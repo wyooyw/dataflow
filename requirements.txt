@@ -2,3 +2,4 @@ ipdb==0.13.9
 bitarray==2.3.0
 orderedset==2.0.3
 pyyaml==6.0
+cli

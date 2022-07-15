@@ -60,31 +60,39 @@ def show_memory(net):
                 # pass
                 print(f"  [None] {key}")
 
-def run():
-    use_half = False
-    use_gpu = False
-    assert ((not use_gpu) and (not use_half)) or (use_gpu and torch.cuda.is_available())
+def run(verbose, module, use_gpu, use_half, load_params):
+    """ Generate test data of ppu.
 
+    Params:
+        verbose(boolean): Show detail.
+        module(str): which
+    """
 
-    # Load state_dict
-    if use_gpu:
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-    sd = torch.load('model/resnet18_baseline_new_archi3_bnAffineTrue_fp16/model_best.pth.tar',map_location=device)
-    
-    state_dict = OrderedDict()
-    for key,value in sd["state_dict"].items():
-        state_dict[key.replace("module.","")] = value
+    # Check gpu and fp16 avaliable
+    if use_gpu==False and use_half==True:
+        assert False,"You must use gpu when you want to use fp16. Add '-g' in your command."
+    if use_gpu==True:
+        assert torch.cuda.is_available(),"Gpu is not available."
+    print(f"Use gpu:{use_gpu}\tUse half:{use_half}")
+
 
     # Init nureal network
-    torch_net = resnet18_cifar()
-    torch_net.load_state_dict(state_dict)
+    torch_net = {
+        "resnet":resnet18_cifar,
+        "alexnet":AlexNet
+    }[module]()
+    if not load_params==None:
+        device = torch.device('cuda') if use_gpu else torch.device('cpu')
+        sd = torch.load(load_params,map_location=device)
+        
+        state_dict = OrderedDict()
+        for key,value in sd["state_dict"].items():
+            state_dict[key.replace("module.","")] = value
+        torch_net.load_state_dict(state_dict)
     if use_gpu:
         torch_net = torch_net.cuda()
-    if use_half:
-        torch_net = torch_net.half()
-
+        if use_half:
+            torch_net = torch_net.half()
     torch_net.eval()
 
     #Merge weight,bias into mean,var
@@ -105,10 +113,11 @@ def run():
     scheduler = NormalScheduler()
     # scheduler = WUImmScheduler()
     scheduler.schedule(net)
-    # print(net)
+    print(net)
     # show_memory(net)
     
-    
+    # import sys
+    # sys.exit()
     net.set_tensor_index()
 
     # MemoryManager().tensor_memory_layout2(net)
@@ -148,7 +157,7 @@ def run():
     input.requires_grad=True
     executer = Executer(net)
     output = executer.execute(input,label,to="WGConv_0").tensors.get_data("weight_grad")
-    # output = executer.execute(input,label,to="FLinear_0").tensors.get_data("output")
+    # output = executer.execute(input,label,to="FLinear_2").tensors.get_data("output")
 
     torch_output = torch_net(input)
     torch_output = torch.nn.CrossEntropyLoss()(torch_output,label)
@@ -157,13 +166,13 @@ def run():
     torch_output = torch_net.conv1.weight.grad
     # print(net)
     # print(output)
-    print(output[0,:,:,:])
-    print(torch_output[0,:,:,:])
+    # print(output[0,:,:,:])
+    # print(torch_output[0,:,:,:])
     if output.shape==torch_output.shape:
         # print(output)
         # print(label)
-        print(torch.max(torch.abs(output)))
-        print(torch.max(torch.abs(torch_output)))
+        print(torch.max(output),torch.max(torch_output))
+        print(torch.min(output),torch.min(torch_output))
         print(torch.mean(torch.abs(output-torch_output)))
         print(torch.max(torch.abs(output-torch_output)))
         # print(torch.mean(torch.abs(output-torch_output))<0.01)

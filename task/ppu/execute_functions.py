@@ -3,6 +3,7 @@ import os
 import torch
 from compiler.utils.utils import str_title
 from collections import OrderedDict
+from task.ppu.utils import convert_tensor_layout
 
 save_data = True
 
@@ -153,9 +154,14 @@ def prepare_tensor(op,op_name,tensor,tensor_name):
         tensor = mask_to_ptr(tensor.storage.data[:,0:1,:,:],op.attrs.get("kernel_size"))
         return "ptr", tensor[:,0:1,:,:]
 
-
+    # if op_name.startswith("ForwardLinear") and tensor_name in ["input","output","input_grad","output_grad"]:
+    #     print(tensor_name,tensor.shape,tensor.storage.data.shape)
     if tensor_name in ["input","output","input_grad","output_grad","mask","input2","output_grad2","output_grad_res"]:
-        return tensor_name, tensor.storage.data[:,0:1,:,:]
+        # print(op_name,tensor_name,tensor.shape,tensor.storage.data.shape)
+        if tensor.storage.data.ndim==4:
+            return tensor_name, tensor.storage.data[:,0:1,:,:]
+        else:
+            return tensor_name, tensor.storage.data
 
     if op_name.startswith("BackwardBatchnorm") and tensor_name=="mean":
         return None, None
@@ -173,6 +179,20 @@ def prepare_tensor(op,op_name,tensor,tensor_name):
 
     return tensor_name, tensor.storage.data
 
+def layout_tensor(op,op_name,tensor_data,tensor_name):
+    # 所有张量按照PE输出的样子改一遍格式;maxpool的输出张量
+    if op_name.startswith("ForwardMaxpool") and
+        (tensor_name=="output" or tensor_name=="ptr"):
+        kernel_size = op.attrs.get("kernel_size")
+        tensor_data = convert_tensor_layout(tensor_data,div=kernel_size)
+    elif op_name.startswith("BackwardMaxpool"):
+        # 反传Maxpool，目前在resnet和alexnet，cifar10数据集下，其输入张量的长宽没有大于16的，所以这里其实什么也不做。
+        # 但是后续需要考虑
+        tensor_data = convert_tensor_layout(tensor_data)
+    else:
+        tensor_data = convert_tensor_layout(tensor_data)
+    return tensor_data
+
 def stats_tensors(op_list):
     visit = set()
     record = OrderedDict()
@@ -184,6 +204,7 @@ def stats_tensors(op_list):
                 continue
             visit.add(tensor)
             _tensor_name, _tensor = prepare_tensor(op, op_name, tensor, tensor_name)
+            _tensor = layout_tensor(op, op_name, _tensor, _tensor_name)
             if (not _tensor_name==None) and (not _tensor==None):
                 op_tensor[_tensor_name] = _tensor
             # if op_name.startswith("BackwardBatchnorm") and name=="mean":
@@ -225,6 +246,7 @@ def stats_inout_tensors(op_list):
         for tensor_name,tensor in op.tensors.tensors.items():
             if tensor in inout_tensors:
                 _tensor_name, _tensor = prepare_tensor(op, op_name, tensor, tensor_name)
+                _tensor = layout_tensor(op, op_name, _tensor, _tensor_name)
                 if (not _tensor_name==None) and (not _tensor==None):
                     op_tensor[_tensor_name] = _tensor
 

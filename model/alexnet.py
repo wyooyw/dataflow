@@ -43,10 +43,10 @@ class AlexNet(nn.Module):
 
         x = self.flatten(x)
         
-        x = self.drop6(x)
+        # x = self.drop6(x)
         x = self.line6(x)
         x = self.relu6(x)
-        x = self.drop7(x)
+        # x = self.drop7(x)
         x = self.line7(x)
         x = self.relu7(x)
         x = self.line8(x)

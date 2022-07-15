@@ -50,6 +50,7 @@ class DualBatchnorm(Dual):
     
     @classmethod
     def from_torch_module(cls,in_shape,module):
+        # 若affine=False，则不进行仿射变换，即如果有weight和bias，就将它们融进mean和std里。
         affine = False and module.affine
         dual = DualBatchnorm(in_shape=in_shape,affine=affine)
         
