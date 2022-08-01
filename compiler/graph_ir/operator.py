@@ -23,8 +23,25 @@ class Attrs:
         copy_self.attrs = copy.copy(self.attrs)
         copy_self.op = self.op
         return copy_self
+    
+    def equals(self,attrs,verbose=False):
+        """ 判断self与attrs的内容是否相等
+        """
+        assert isinstance(attrs,Attrs)
+        if not len(self.attrs)==len(attrs.attrs):
+            print(f"Check attrs equals fail!len(self.attrs)={len(self.attrs)}, len(attrs.attrs)={len(attrs.attrs)}")
+            return False
+        for attr1,attr2 in zip(self.attrs.items(),attrs.attrs.items()):
+            if not attr1[0]==attr2[0]:
+                print(f"Check attrs equals fail! attr1.key='{attr1[0]}', attr2.key='{attr2[1]}'")
+                return False
+            if not attr1[1]==attr2[1]:
+                print(f"Check attrs equals fail! attr1.value='{attr1[0]}', attr2.value='{attr2[1]}'")
+                return False
+        return True
 
 def warn(cond,string):
+    return
     if not cond:
         print(string)
 class Tensors:
@@ -100,6 +117,21 @@ class Tensors:
         tensor = self.get(key)
         assert list(tensor.shape)==list(data.shape),f"Shape of data should be {tensor.shape}, but got {data.shape}."
         tensor.storage.data = data
+
+    def equals(self,tensors):
+        assert isinstance(tensors,Tensors)
+        if not len(self.tensors)==len(tensors.tensors):
+            print(f"Check attrs equals fail!len(self.tensors)={len(self.tensors)}, len(tensors.tensors)={len(tensors.tensors)}")
+            return False
+        for tensor1,tensor2 in zip(self.tensors.items(),tensors.tensors.items()):
+            if not tensor1[0]==tensor2[0]:
+                print(f"Check attrs equals fail! tensor1.key='{tensor1[0]}', tensor2.key='{tensor2[1]}'")
+                return False
+            if not tensor1[1].equals(tensor2[1]):
+                print(f"Check attrs equals fail! tensor1.value='{tensor1[0]}', tensor2.value='{tensor2[1]}'")
+                return False
+        return True
+        
         
 
 
@@ -273,3 +305,20 @@ class Operator:
     def sim_run(self):
         pass
     
+    def equals(self,op):
+        """ 判断两个算子是否相等
+        """
+        assert isinstance(op,Operator),f"Type of op should be Operator,but got {type(op)}"
+        if not self.name==op.name:
+            print(f"Two op's names are not equal!{self.name}, {op.name}")
+            return False
+        if not self.type==op.type:
+            print(f"Two op's types are not equal!{self.type}, {op.type}")
+            return False
+        if not self.attrs.equals(op.attrs):
+            print("Two op's attrs are not equal!")
+            return False
+        if not self.tensors.equals(op.tensors):
+            print("Two op's tensors are not equal!")
+            return False
+        return True

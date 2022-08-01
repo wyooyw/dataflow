@@ -66,4 +66,16 @@ class Tensor:
     
             
 
-        
+    def equals(self,tensor):
+        assert isinstance(tensor,Tensor)
+        if not self.addr==tensor.addr:
+            return False
+        if not self.shape==tensor.shape:
+            return False
+        if not self.offset==tensor.offset:
+            return False
+        if not self.stride==tensor.stride:
+            return False
+        if not self.name==tensor.name:
+            return False
+        return True

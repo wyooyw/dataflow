@@ -196,3 +196,16 @@ class Net:
     def apply(self,fn):
         for op in self.topo():
             fn(op)
+
+    def equals(self,net):
+        assert type(net)==Net
+        ops1 = list(self.topo())
+        ops2 = list(net.topo())
+        if not len(ops1)==len(ops2):
+            print(f"Two nets are not equal!Net 1 has {len(ops1)} ops, Net 2 has {len(ops2)} ops.")
+            return False
+        for op1,op2 in zip(ops1,ops2):
+            if not op1.equals(op2):
+                print("Two op are not equal!")
+                return False
+        return True

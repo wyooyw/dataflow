@@ -15,3 +15,6 @@ def unique_class_name(name):
 
     return f"{name}_{count[name]}"
 
+def refresh_class_name():
+    global count
+    count = {}

@@ -79,6 +79,19 @@ class ForwardPPUFusedOp(Operator):
         # bits = instruction.export()
 
         return instruction
+        
+    def equals(self,fused_op):
+        assert isinstance(fused_op,ForwardPPUFusedOp)
+        if not super().equals(fused_op):
+            return False
+        if not len(self.op_list)==len(fused_op.op_list):
+            print(f"Op list are not equal!{len(self.op_list)},{len(fused_op.op_list)}")
+            return False
+        for op1,op2 in zip(self.op_list,fused_op.op_list):
+            if not op1.equals(op2):
+                print("Op are not equal!")
+                return False
+        return True
     
 
 class BackwardPPUFusedOp(Operator):
