@@ -82,7 +82,7 @@ class Finder:
     def find_first_op(self):
         pattern_first = self.pattern[0]
         ret = None
-        for op in self.net.ops:
+        for op in self.net.topo():
             if type(op)==pattern_first and not op in self.visit:
                 ret = op
                 break
