@@ -56,6 +56,8 @@
   terms:
     "0": 2
     "1": 4
+- name: pooling_fwd_group
+  long: 3
 - name: pooling_bp_en
   long: 1
   terms:
@@ -66,3 +68,5 @@
   terms:
     "0": 2
     "1": 4
+- name: pooling_bp_group
+  long: 3

@@ -41,6 +41,16 @@ class ForwardPPUFusedOp(Operator):
         if self.add:
             add_input_shape = self.add.tensors.get("input1").shape
             res_acc_finish = add_input_shape[0]*add_input_shape[2]*add_input_shape[3] - 1
+        
+        if self.maxpool:
+            pooling_fwd_en = "enable"
+            pooling_fwd_mode = kernel_size = self.maxpool.attrs.get("kernel_size")
+            pooling_fwd_group = min(self.maxpool.in_shape[3],16)//kernel_size - 1
+        else:
+            pooling_fwd_en = "bypass"
+            pooling_fwd_mode = 2
+            pooling_fwd_group = 0
+        
         instruction = Instruction(config_path="task/ppu/ppu_control.yaml",name="ppu",init_data={
             #BatchNorm
             "bn_fwd_en":"enable" if self.bn else "bypass",
@@ -56,13 +66,16 @@ class ForwardPPUFusedOp(Operator):
             "ResAcc_bp_single_line_en": "double",
             # "ResAcc_bp_finish": res_acc_finish,
             #Maxpool
-            "pooling_fwd_en": "enable" if self.maxpool else "bypass",
-            "pooling_fwd_mode": self.maxpool.attrs.get("kernel_size") if self.maxpool else 2,
+            "pooling_fwd_en": pooling_fwd_en,
+            "pooling_fwd_mode": pooling_fwd_mode,
             "pooling_bp_en": "bypass",
             "pooling_bp_mode": 2,
+            # "pooling_bp_group": 0
         })
         instruction.set("bn_finish", int_to_bits(bn_finish,16).to01(),use_bits=True)
         instruction.set("ResAcc_bp_finish", int_to_bits(res_acc_finish,16).to01(),use_bits=True)
+        instruction.set("pooling_fwd_group", int_to_bits(pooling_fwd_group,3).to01(),use_bits=True)
+        instruction.set("pooling_bp_group", int_to_bits(0,3).to01(),use_bits=True)
         # bits = instruction.export()
 
         return instruction
@@ -110,6 +123,16 @@ class BackwardPPUFusedOp(Operator):
         if self.add:
             add_input_shape = self.add.tensors.get("input_grad").shape
             res_acc_finish = add_input_shape[0]*add_input_shape[2]*add_input_shape[3]-1
+        
+        if self.maxpool:
+            pooling_bp_en = "enable"
+            pooling_bp_mode = kernel_size = self.maxpool.attrs.get("kernel_size")
+            pooling_bp_group = min(self.maxpool.out_shape[3],16)//kernel_size - 1
+        else:
+            pooling_bp_en = "bypass"
+            pooling_bp_mode = 2
+            pooling_bp_group = 0
+
         instruction = Instruction(config_path="task/ppu/ppu_control.yaml",name="ppu",init_data={
             #BatchNorm
             "bn_fwd_en":"bypass",
@@ -130,6 +153,9 @@ class BackwardPPUFusedOp(Operator):
         })
         instruction.set("bn_finish", int_to_bits(bn_finish,16).to01(),use_bits=True)
         instruction.set("ResAcc_bp_finish", int_to_bits(res_acc_finish,16).to01(),use_bits=True)
+        instruction.set("pooling_fwd_group", int_to_bits(0,3).to01(),use_bits=True)
+        instruction.set("pooling_bp_group", int_to_bits(pooling_bp_group,3).to01(),use_bits=True)
+
         # bits = instruction.export()
 
         return instruction

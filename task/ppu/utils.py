@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-# from task.ppu.op.scalar_add import BackwardScalarAdd
+from task.ppu.op.scalar_add import BackwardScalarAdd
 
 def judge_single_line(operator):
     if not type(operator).__name__ in ["BackwardSplit"]:
@@ -97,7 +97,8 @@ def convert_tensor_layout(tensor,out_tile_len=16,div=1):
     elif tensor.ndim==2:
         return _convert_tensor_layout_2d(tensor,out_tile_len)
     else:
-        assert False
+        return tensor
+        # assert False,f"tensor.ndim={tensor.ndim}"
 
 if __name__=="__main__":
     tensor = torch.arange(0,64).reshape(1,1,8,8)

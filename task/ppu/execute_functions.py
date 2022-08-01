@@ -4,8 +4,9 @@ import torch
 from compiler.utils.utils import str_title
 from collections import OrderedDict
 from task.ppu.utils import convert_tensor_layout
-
+import time
 save_data = True
+data_name = time.strftime('%Y-%m-%dT%H-%M-%S', time.localtime(time.time()))
 
 @bind(operator="BackwardScalarAdd")
 def backward_scalar_add(self):
@@ -25,18 +26,18 @@ def backward_scalar_add(self):
 
 @bind(operator="ForwardPPUFusedOp")
 def forward_ppu_fused_op(self):
-    class_name_stats = []
+
+    # Execute each op in self.op_list
     for op in self.op_list:
         class_name = str(type(op).__name__)
-        class_name_stats.append(class_name)
         if class_name in bind_table:
             execute_fn = bind_table[class_name]
             execute_fn(op)
         else:
             assert False
 
-    op_name_list = make_op_name(self.op_list)
     if save_data:
+        op_name_list = make_op_name(self.op_list)
         tensor_stats = stats_tensors(op_name_list)
         inout_tensor_stats = stats_inout_tensors(op_name_list)
         save_to_file(direct="fwd",
@@ -44,21 +45,20 @@ def forward_ppu_fused_op(self):
                     tensor_stats=tensor_stats,
                     inout_tensor_stats=inout_tensor_stats,
                     ppu_instr=self.to_ppu_instr(),
-                    path="test_data/forward")
+                    path=f"test_data/{data_name}/forward")
 
 @bind(operator="BackwardPPUFusedOp")
 def backward_ppu_fused_op(self):
-    class_name_stats = []
     for op in self.op_list:
         class_name = str(type(op).__name__)
-        class_name_stats.append(class_name)
         if class_name in bind_table:
             execute_fn = bind_table[class_name]
             execute_fn(op)
         else:
             assert False
-    op_name_list = make_op_name(self.op_list)
+    
     if save_data:
+        op_name_list = make_op_name(self.op_list)
         tensor_stats = stats_tensors(op_name_list)
         inout_tensor_stats = stats_inout_tensors(op_name_list)
         save_to_file(direct="bwd",
@@ -66,7 +66,7 @@ def backward_ppu_fused_op(self):
                     tensor_stats=tensor_stats,
                     inout_tensor_stats=inout_tensor_stats,
                     ppu_instr=self.to_ppu_instr(),
-                    path="test_data/backward")
+                    path=f"test_data/{data_name}/backward")
 
 @bind(operator="CrossEntropyLoss")
 def cross_entropy_loss(self):
@@ -87,6 +87,9 @@ op_name_reflect = {
 }
 def make_op_name(op_list):
     """为算子设置名称
+
+    这里有的算子名称要替换名字（硬件同学熟悉的名字）
+    遇到重复的算子，要在后面加上标号
 
     Return:
         {
@@ -180,9 +183,12 @@ def prepare_tensor(op,op_name,tensor,tensor_name):
     return tensor_name, tensor.storage.data
 
 def layout_tensor(op,op_name,tensor_data,tensor_name):
+    # print(type(tensor_data))
+    if str(type(tensor_data))=="NoneType":
+        return tensor_data
+
     # 所有张量按照PE输出的样子改一遍格式;maxpool的输出张量
-    if op_name.startswith("ForwardMaxpool") and
-        (tensor_name=="output" or tensor_name=="ptr"):
+    if op_name.startswith("ForwardMaxpool") and (tensor_name=="output" or tensor_name=="ptr"):
         kernel_size = op.attrs.get("kernel_size")
         tensor_data = convert_tensor_layout(tensor_data,div=kernel_size)
     elif op_name.startswith("BackwardMaxpool"):
@@ -204,22 +210,10 @@ def stats_tensors(op_list):
                 continue
             visit.add(tensor)
             _tensor_name, _tensor = prepare_tensor(op, op_name, tensor, tensor_name)
-            _tensor = layout_tensor(op, op_name, _tensor, _tensor_name)
+            # _tensor = layout_tensor(op, op_name, _tensor, _tensor_name)
             if (not _tensor_name==None) and (not _tensor==None):
                 op_tensor[_tensor_name] = _tensor
-            # if op_name.startswith("BackwardBatchnorm") and name=="mean":
-            #     continue
-            # #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
-            # if name=="std":
-            #     op_tensor[f"std_reci"] = 1/tensor.storage.data
-            #     continue
-            # #BackwardScalarAdd用到的方差，转换为标准差
-            # if name=="bn_std":
-            #     op_tensor[f"std"] = tensor.storage.data
-            #     continue
-            # if not tensor.storage.data==None:
-            #     op_tensor[name] = tensor.storage.data
-        record[op_name] = op_tensor
+        record[op_name] = (op,op_tensor)
 
     return record
 
@@ -246,23 +240,10 @@ def stats_inout_tensors(op_list):
         for tensor_name,tensor in op.tensors.tensors.items():
             if tensor in inout_tensors:
                 _tensor_name, _tensor = prepare_tensor(op, op_name, tensor, tensor_name)
-                _tensor = layout_tensor(op, op_name, _tensor, _tensor_name)
+                # _tensor = layout_tensor(op, op_name, _tensor, _tensor_name)
                 if (not _tensor_name==None) and (not _tensor==None):
                     op_tensor[_tensor_name] = _tensor
-
-                # if op_name.startswith("BackwardBatchnorm") and name=="mean":
-                #     continue
-                # #BatchNorm的方差，转换成 1/sqrt(var+1e-5) ，因为S2Train上不方便算根号和倒数
-                # if name=="std":
-                #     op_tensor[f"std_reci"] = 1/tensor.storage.data
-                #     continue
-                # #BackwardScalarAdd用到的方差，转换为标准差
-                # if name=="bn_std":
-                #     op_tensor[f"std"] = tensor.storage.data
-                #     continue
-                # if not tensor.storage.data==None:
-                #     op_tensor[name] = tensor.storage.data
-        record[op_name] = op_tensor
+        record[op_name] = (op,op_tensor)
     return record
 
 import numpy as np
@@ -299,9 +280,11 @@ def save_to_file(direct,op_stats,tensor_stats,inout_tensor_stats,ppu_instr,path=
 
     # Save input & output tensors
     info.append(str_title("Tensors"))
-    for op_name,tensor_list in inout_tensor_stats.items():
+    for op_name,value in inout_tensor_stats.items():
+        op,tensor_list = value
         for tensor_name,tensor in tensor_list.items():
             info.append(f"{op_name}.{tensor_name}.shape={list(tensor.shape)}")
+            tensor = layout_tensor(op,op_name,tensor,tensor_name)
             tensor = tensor.reshape(-1).cpu().numpy()
             file_path = os.path.join(path,f"{op_name}.{tensor_name}.txt")
             if tensor.dtype==bool or tensor.dtype==np.int32:
@@ -317,9 +300,11 @@ def save_to_file(direct,op_stats,tensor_stats,inout_tensor_stats,ppu_instr,path=
 
     # Save all tensors in 'detail' folder
     info2.append(str_title("Tensors"))
-    for op_name,tensor_list in tensor_stats.items():
+    for op_name,value in tensor_stats.items():
+        op,tensor_list = value
         for tensor_name,tensor in tensor_list.items():
             info2.append(f"{op_name}.{tensor_name}.shape={tensor.shape}")
+            tensor = layout_tensor(op,op_name,tensor,tensor_name)
             tensor = tensor.reshape(-1).cpu().numpy()
             file_path = os.path.join(path,"detail",f"{op_name}.{tensor_name}.txt")
             if tensor.dtype==bool or tensor.dtype==np.int32:

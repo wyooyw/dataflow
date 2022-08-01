@@ -134,5 +134,8 @@ model/resnet18_baseline_new_archi3_bnAffineTrue_fp16/
 # dataset
 dataset/
 
+# test_data
+test_data/
+
 # zip
 *.zip

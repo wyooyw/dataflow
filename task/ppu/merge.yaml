@@ -1,71 +1,71 @@
-# # Forward
-# # Resnet use
-# - pattern:
-#   - ForwardBatchnorm
-#   - ForwardAdd
-#   - ForwardRelu
-#   - ForwardMaxpool
-#   replace: ForwardPPUFusedOp
-# - pattern:
-#   - ForwardBatchnorm
-#   - ForwardAdd
-#   - ForwardRelu
-#   replace: ForwardPPUFusedOp
-# - pattern:
-#   - ForwardBatchnorm
-#   - ForwardRelu
-#   replace: ForwardPPUFusedOp
-# - pattern:
-#   - ForwardBatchnorm
-#   replace: ForwardPPUFusedOp
-# # AlexNet use
-# - pattern:
-#   - ForwardRelu
-#   - ForwardMaxpool
-#   replace: ForwardPPUFusedOp
-# - pattern:
-#   - ForwardRelu
-#   replace: ForwardPPUFusedOp
+# Forward
+# Resnet use
+- pattern:
+  - ForwardBatchnorm
+  - ForwardAdd
+  - ForwardRelu
+  - ForwardMaxpool
+  replace: ForwardPPUFusedOp
+- pattern:
+  - ForwardBatchnorm
+  - ForwardAdd
+  - ForwardRelu
+  replace: ForwardPPUFusedOp
+- pattern:
+  - ForwardBatchnorm
+  - ForwardRelu
+  replace: ForwardPPUFusedOp
+- pattern:
+  - ForwardBatchnorm
+  replace: ForwardPPUFusedOp
+# AlexNet use
+- pattern:
+  - ForwardRelu
+  - ForwardMaxpool
+  replace: ForwardPPUFusedOp
+- pattern:
+  - ForwardRelu
+  replace: ForwardPPUFusedOp
   
-# # Backward
-# # Resnet use
-# - pattern:
-#   - BackwardSplit
-#   - BackwardRelu
-#   - DoubleBn
-#   replace: BackwardPPUFusedOp
-# - pattern:
-#   - BackwardScalarAdd
-#   - BackwardRelu
-#   - DoubleBn
-#   replace: BackwardPPUFusedOp
-# - pattern:
-#   - BackwardScalarAdd
-#   - BackwardRelu
-#   - BackwardBatchnorm
-#   replace: BackwardPPUFusedOp
-# - pattern:
-#   - BackwardSplit
-#   - BackwardRelu
-#   - BackwardBatchnorm
-#   replace: BackwardPPUFusedOp
-# - pattern:
-#   - BackwardMaxpool
-#   - BackwardRelu
-#   - BackwardBatchnorm
-#   replace: BackwardPPUFusedOp
-# - pattern:
-#   - BackwardRelu
-#   - BackwardBatchnorm
-#   replace: BackwardPPUFusedOp
-# # AlexNet use
-# - pattern:
-#   - BackwardMaxpool
-#   - BackwardRelu
-#   replace: BackwardPPUFusedOp
-# - pattern:
-#   - BackwardRelu
-#   replace: BackwardPPUFusedOp
+# Backward
+# Resnet use
+- pattern:
+  - BackwardSplit
+  - BackwardRelu
+  - DoubleBn
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardScalarAdd
+  - BackwardRelu
+  - DoubleBn
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardScalarAdd
+  - BackwardRelu
+  - BackwardBatchnorm
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardSplit
+  - BackwardRelu
+  - BackwardBatchnorm
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardMaxpool
+  - BackwardRelu
+  - BackwardBatchnorm
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardRelu
+  - BackwardBatchnorm
+  replace: BackwardPPUFusedOp
+# AlexNet use
+- pattern:
+  - BackwardMaxpool
+  - BackwardRelu
+  replace: BackwardPPUFusedOp
+- pattern:
+  - BackwardRelu
+  replace: BackwardPPUFusedOp
 
 #Loss
 - pattern:

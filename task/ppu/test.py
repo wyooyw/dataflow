@@ -78,17 +78,75 @@ def test_double_bn():
 
 def test_maxpool():
     input = np.loadtxt(f"test_data/forward/0/detail/ForwardRelu.output.txt", delimiter=" ").reshape(4,1,32,32)
+    
     batch,channel,height,width = input.shape
     input = input.reshape(batch,channel,height//2,2,width//2,2)
     input = np.transpose(input,(0,1,2,4,3,5))
-    input = input.reshape(batch,height * width//4,4)
-    # input = torch.from_numpy(input)
+    input = input.reshape(batch,channel,height//2,width//2,4)
+    output = np.max(input,axis=4).reshape(-1)
+    ptr = np.argmax(input,axis=4).reshape(-1)
+    
+    maxpool_output = np.loadtxt(f"test_data/forward/0/ForwardMaxpool.output.txt", delimiter=" ").reshape(-1)
+    maxpool_ptr = np.loadtxt(f"test_data/forward/0/ForwardMaxpool.ptr.txt", delimiter=" ").reshape(-1)
+    
+    delta_output = output - maxpool_output
+    delta_ptr = ptr - maxpool_ptr
+    err_output = (np.max(delta_output),np.min(delta_output),np.sum(delta_output>0.001))
+    err_ptr = (np.max(argmax - maxpool_ptr),np.min(argmax - maxpool_ptr))
+    print("err_output:",err_output)
+    print("err_ptr:",err_ptr)
 
-    ls = input[0].tolist()
-    # for idx,item in enumerate():
-    ls = [f"{index} {str(item)}" for index,item in enumerate(ls)]
-    print(len(ls))
-    print("\r\n".join(ls))
+def test_maxpool2():
+    input = np.loadtxt(f"test_data/forward/0/detail/ForwardRelu.output.txt", delimiter=" ").reshape(4,32,2,8,2)
+    input = np.transpose(input,(0,1,3,2,4))
+    input = input.reshape(4,32,8,4)
+    max = np.max(input,axis=3).reshape(-1)
+    argmax = np.argmax(input,axis=3).reshape(-1)
+    
+    maxpool_output = np.loadtxt(f"test_data/forward/0/ForwardMaxpool.output.txt", delimiter=" ").reshape(-1)
+    maxpool_ptr = np.loadtxt(f"test_data/forward/0/ForwardMaxpool.ptr.txt", delimiter=" ").reshape(-1)
+    
+    delta_output = max - maxpool_output
+    delta_ptr = argmax - maxpool_ptr
+    err_output = (np.max(delta_output),np.min(delta_output),np.sum(delta_output>0.001))
+    err_ptr = (np.max(argmax - maxpool_ptr),np.min(argmax - maxpool_ptr))
+    print("err_output:",err_output)
+    print("err_ptr:",err_ptr)
+
+def test_maxpool3():
+    input = np.loadtxt(f"test_data/forward/1/detail/ForwardRelu.output.txt", delimiter=" ").reshape(4,1,16,16)
+    
+    batch,channel,height,width = input.shape
+    input = input.reshape(batch,channel,height//2,2,width//2,2)
+    input = np.transpose(input,(0,1,2,4,3,5))
+    input = input.reshape(batch,channel,height//2,width//2,4)
+    output = np.max(input,axis=4).reshape(-1)
+    ptr = np.argmax(input,axis=4).reshape(-1)
+    
+    maxpool_output = np.loadtxt(f"test_data/forward/1/ForwardMaxpool.output.txt", delimiter=" ").reshape(-1)
+    maxpool_ptr = np.loadtxt(f"test_data/forward/1/ForwardMaxpool.ptr.txt", delimiter=" ").reshape(-1)
+    
+    delta_output = output - maxpool_output
+    delta_ptr = ptr - maxpool_ptr
+    err_output = (np.max(delta_output),np.min(delta_output),np.sum(delta_output>0.001))
+    err_ptr = (np.max(delta_ptr),np.min(delta_ptr))
+    print("err_output:",err_output)
+    print("err_ptr:",err_ptr)
+
+def test4():
+    input = np.loadtxt(f"test_data/forward/1/ForwardBatchnorm.input.txt", delimiter=" ").reshape(-1)
+    mean = np.loadtxt(f"test_data/forward/1/ForwardBatchnorm.mean.txt", delimiter=" ").reshape(-1)
+    std_reci = np.loadtxt(f"test_data/forward/1/ForwardBatchnorm.std_reci.txt", delimiter=" ").reshape(-1)
+    output = np.loadtxt(f"test_data/forward/1/ForwardRelu.output.txt", delimiter=" ").reshape(-1)
+
+    predict = (input - mean) * std_reci
+    predict = predict * (predict > 0)
+    err = output - predict
+    print("err:",np.max(err),np.min(err))
+    print(np.sum(err>0.1),"/",len(err))
 if __name__=="__main__":
     # test_double_bn()
-    test_maxpool()
+    # test_maxpool()
+    # test_maxpool2()
+    # test_maxpool3()
+    test4()
