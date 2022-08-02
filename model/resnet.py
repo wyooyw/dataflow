@@ -26,6 +26,7 @@ class BasicBlock(nn.Module):
         self.relu1 = nn.ReLU(inplace=False)
         self.conv2 = conv3x3( planes, planes)
         self.bn2 = nn.BatchNorm2d(planes,affine=True)
+        self.bn2.__finder_priority__=1
         self.downsample = downsample
         self.relu2 = nn.ReLU(inplace=False)
 

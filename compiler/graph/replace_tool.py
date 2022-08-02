@@ -83,9 +83,14 @@ class Finder:
         pattern_first = self.pattern[0]
         ret = None
         for op in self.net.topo():
-            if type(op)==pattern_first and not op in self.visit:
+            if (type(op)==pattern_first) and (not op in self.visit) and hasattr(op,"__finder_priority__"):
                 ret = op
                 break
+        if ret==None:
+            for op in self.net.topo():
+                if type(op)==pattern_first and not op in self.visit:
+                    ret = op
+                    break
         return ret
 
     def check(self,begin_op:Operator):

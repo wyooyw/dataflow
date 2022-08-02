@@ -77,7 +77,8 @@ class DualBatchnorm(Dual):
             dual.forward.get_tensors().tensors["alpha"].storage.data = module.weight.detach()
             dual.forward.get_tensors().tensors["beta"].storage.data = module.bias.detach()
         
-        
+        if hasattr(module,"__finder_priority__"):
+            dual.forward.__finder_priority__ = 1
         
         return dual
 
