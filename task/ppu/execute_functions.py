@@ -159,7 +159,7 @@ def prepare_tensor(op,op_name,tensor,tensor_name):
 
     # if op_name.startswith("ForwardLinear") and tensor_name in ["input","output","input_grad","output_grad"]:
     #     print(tensor_name,tensor.shape,tensor.storage.data.shape)
-    if tensor_name in ["input","output","input_grad","output_grad","mask","input2","output_grad2","output_grad_res"]:
+    if tensor_name in ["input","output","input_grad","output_grad","mask","input1","output_grad1","input2","output_grad2","output_grad_res"]:
         # print(op_name,tensor_name,tensor.shape,tensor.storage.data.shape)
         if tensor.storage.data.ndim==4:
             return tensor_name, tensor.storage.data[:,0:1,:,:]
